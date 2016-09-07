@@ -1,13 +1,14 @@
 
 [Setup]
 AppName                 = CPUMICO32
-AppVerName              = CPUMICO32_2_0_3
+AppVerName              = CPUMICO32_2_0_4
 DefaultDirName          = {pf}\mico32
 DisableProgramGroupPage = yes
-OutputBaseFilename      = setup_cpumico32_2_0_3
+OutputBaseFilename      = setup_cpumico32_2_0_4
 
 [Dirs]
 Name: "{app}\obj"
+Name: "{app}\obj_lnx"
 
 [Files]
 ; This inno file

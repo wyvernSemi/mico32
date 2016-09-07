@@ -22,7 +22,7 @@
 // You should have received a copy of the GNU General Public License
 // along with cpumico32. If not, see <http://www.gnu.org/licenses/>.
 //
-// $Id: lm32_cpu.h,v 2.7 2016-09-03 07:44:06 simon Exp $
+// $Id: lm32_cpu.h,v 2.8 2016-09-06 06:13:47 simon Exp $
 // $Source: /home/simon/CVS/src/cpu/mico32/src/lm32_cpu.h,v $
 //
 //=============================================================
@@ -39,6 +39,7 @@
 
 #include "lm32_cpu_hdr.h"
 #include "lm32_cache.h"
+#include "lm32_cpu_mico32.h"
 
 // -------------------------------------------------------------------------
 // DEFINES
@@ -111,7 +112,7 @@ public:
         uint32_t     int_flags;           // Bitmap flags to indicate requesting interrupt
         lm32_time_t  cycle_count;         // Cycle count (doubles up as mico32 cc register)
         lm32_time_t  clk_count;           // Absolute clock ticks---increments by 1 on 'TICK' calls to model
-        lm32_time_t  instr_count;         // Number of instructions executed since time 0
+        uint64_t     instr_count;         // Number of instructions executed since time 0
     };
 
     // Constructor, with default configuration values
@@ -174,7 +175,7 @@ public:
     LIBMICO32_API void               lm32_set_configuration         (const uint32_t word);       // Enable/disable CPU features
 
     // Return the current number of instructions executed
-    LIBMICO32_API inline lm32_time_t lm32_get_num_instructions(void) {  return state.instr_count; }
+    LIBMICO32_API inline uint64_t lm32_get_num_instructions(void) { return state.instr_count; }
     
     // Return the current time
     LIBMICO32_API inline lm32_time_t lm32_get_current_time(void) {  return state.clk_count; }
@@ -325,7 +326,7 @@ private:
     uint32_t*                  mem32;
 
     // Pointer to decode table of pointers to instruction functions
-    void                       *tbl_p;
+    pFunc_t                    tbl_p[LM32_NUM_OPCODES];
 
     // Instruction decode information table. Static, as never changes
     static const lm32_decode_table_t decode_table [LM32_NUM_OPCODES] ;

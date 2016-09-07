@@ -21,7 +21,7 @@
 // You should have received a copy of the GNU General Public License
 // along with lnxmico32. If not, see <http://www.gnu.org/licenses/>.
 //
-// $Id: lnxmico32.cpp,v 2.6 2016-09-03 07:44:06 simon Exp $
+// $Id: lnxmico32.cpp,v 2.7 2016-09-06 06:06:40 simon Exp $
 // $Source: /home/simon/CVS/src/cpu/mico32/src/lnxmico32.cpp,v $
 //
 //=============================================================
@@ -61,6 +61,12 @@ extern char* optarg;
 
 #define LM32_MEM_WR_PAGE_BITS 10
 #define LM32_MEM_WR_BUF_SIZE (LM32_RAM_SIZE/(1 << LM32_MEM_WR_PAGE_BITS))
+
+#if !(defined _WIN32) && !(defined _WIN64) && !(defined CYGWIN)
+#define LM32_TIME_PRINT_STR "%ld"
+#else
+#define LM32_TIME_PRINT_STR "%lld"
+#endif
 
 // -------------------------------------------------------------------------
 // LOCAL STATICS
@@ -655,7 +661,10 @@ int main (int argc, char** argv)
     // Dump the number of executed instructions
     if (p_cfg->dump_num_exec_instr)
     {
-        fprintf(lfp, "\nNumber of executed instructions = %ld (%ld)\n",  cpu->lm32_get_num_instructions(), cpu->lm32_get_current_time());
+        uint64_t instr_count = cpu->lm32_get_num_instructions();
+
+        fprintf(lfp, "\nNumber of executed instructions = %.1f million\n",  
+	              (float)instr_count/1e6);
     }
 
     // Dump RAM, if specified to do so and within range
@@ -704,9 +713,6 @@ int main (int argc, char** argv)
     {
         save_system_state();
     }
-
-    // Disable the caches, to exercise their deletion
-    cpu->lm32_set_configuration(p_cfg->cfg_word & ~((uint32_t)(LM32_DCACHE_ENABLE | LM32_ICACHE_ENABLE)));
 
     return 0;
 }

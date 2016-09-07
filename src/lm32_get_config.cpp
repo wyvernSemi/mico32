@@ -22,7 +22,7 @@
 // You should have received a copy of the GNU General Public License
 // along with cpumico32. If not, see <http://www.gnu.org/licenses/>.
 //
-// $Id: lm32_get_config.cpp,v 2.7 2016-09-03 07:44:09 simon Exp $
+// $Id: lm32_get_config.cpp,v 2.8 2016-09-06 06:11:26 simon Exp $
 // $Source: /home/simon/CVS/src/cpu/mico32/src/lm32_get_config.cpp,v $
 //
 //=============================================================
@@ -117,6 +117,9 @@ static void lm32_parse_ini_file(const char *ini_fname, ini_entry_t* p_cfg_entrie
     char line[MAXLINESIZE];
     char curr_section[MAX_SECT_STR_SIZE];
 
+    // Make sure this buffer is initialised with something, to prevent warnings
+    curr_section[0] = '\0';
+
     // Open ini file for reading, if one specified
     if (!strcmp(ini_fname, ""))
     {
@@ -160,6 +163,7 @@ static void lm32_parse_ini_file(const char *ini_fname, ini_entry_t* p_cfg_entrie
         } 
         else if (isalpha(line[0]))
         {
+#           pragma warning(suppress: 6053) // This suppresses a warning about no string terminator, but strncpy guarantees a terminated string
             strncpy(p_cfg_entries[ini_entry_idx].section, curr_section, MAX_SECT_STR_SIZE);
 
             // Find the equals sign
@@ -246,7 +250,7 @@ extern "C" lm32_config_t* lm32_get_config(int argc, char** argv, const char* def
             break;
         case 'h':
         case '?':
-            fprintf(stderr, 
+            fprintf(stderr,
                     "Usage: %s "
 #ifndef LM32_FAST_COMPILE
                     "[-v] [-x] [-d] "
@@ -316,7 +320,11 @@ extern "C" lm32_config_t* lm32_get_config(int argc, char** argv, const char* def
                     "    -L Load saved state before execution (default no load)\n"
 #endif
                     "\n"
-                    , argv[0], LM32_DEFAULT_FNAME, LM32_DEFAULT_MEM_SIZE);
+                    , argv[0]
+#ifndef LNXMICO32
+                    , LM32_DEFAULT_FNAME, LM32_DEFAULT_MEM_SIZE
+#endif
+                        );
             exit(LM32_NO_ERROR);
         }
     }

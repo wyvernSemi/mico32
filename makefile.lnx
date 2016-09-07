@@ -21,7 +21,7 @@
 # You should have received a copy of the GNU General Public License
 # along with lnxmico32. If not, see <http://www.gnu.org/licenses/>.
 #
-# $Id: makefile.lnx,v 2.4 2016-08-30 16:01:13 simon Exp $
+# $Id: makefile.lnx,v 2.5 2016-09-06 14:32:56 simon Exp $
 # $Source: /home/simon/CVS/src/cpu/mico32/makefile.lnx,v $
 # 
 ##########################################################
@@ -55,7 +55,7 @@ COVDIR=cov_html
 
 
 SRCDIR=./src
-OBJDIR=./obj
+OBJDIR=./obj_lnx
 TESTDIR=./test
 
 OSTYPE:=$(shell uname -o)
@@ -67,7 +67,7 @@ CC_C=gcc
 # so -fPIC not required. So shut it up.
 ifeq (${OSTYPE}, Cygwin)
   #COPTS=-g -DLNXMICO32
-  COPTS=-Ofast -DLNXMICO32 -DLM32_FAST_COMPILE
+  COPTS=-Ofast -fomit-frame-pointer -march=native -DLNXMICO32 -DLM32_FAST_COMPILE
 else
   #COPTS=-g -fPIC -DLNXMICO32
   COPTS=-Ofast -fPIC -DLNXMICO32 -DLM32_FAST_COMPILE

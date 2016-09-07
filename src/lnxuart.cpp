@@ -4,7 +4,7 @@
 //
 // Date: 24th August 2016
 //
-// Model for a timer, based on the Lattice implementation.
+// Model for a UART, based on the Lattice implementation.
 //
 // This file is part of the lnxmico32 ISS linux system model.
 //
@@ -21,7 +21,7 @@
 // You should have received a copy of the GNU General Public License
 // along with lnxmico32. If not, see <http://www.gnu.org/licenses/>.
 //
-// $Id: lnxuart.cpp,v 2.5 2016-09-03 07:44:06 simon Exp $
+// $Id: lnxuart.cpp,v 2.7 2016-09-06 06:05:45 simon Exp $
 // $Source: /home/simon/CVS/src/cpu/mico32/src/lnxuart.cpp,v $
 //
 //=============================================================

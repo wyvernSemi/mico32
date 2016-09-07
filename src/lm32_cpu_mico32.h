@@ -21,7 +21,7 @@
 // You should have received a copy of the GNU General Public License
 // along with cpumico32. If not, see <http://www.gnu.org/licenses/>.
 //
-// $Id: lm32_cpu_mico32.h,v 2.4 2016-09-03 07:44:05 simon Exp $
+// $Id: lm32_cpu_mico32.h,v 2.5 2016-09-06 06:14:48 simon Exp $
 // $Source: /home/simon/CVS/src/cpu/mico32/src/lm32_cpu_mico32.h,v $
 //
 //=============================================================
@@ -273,16 +273,11 @@
 // TYPEDEFS
 // -------------------------------------------------------------------------
 
+// Forward reference for following type definition
+class lm32_cpu;
+
 // Define a "pointer to a function" type to match lm32_cpu instruction member functions
 typedef void (lm32_cpu::* pFunc_t) (const p_lm32_decode_t);
 
-// Define a class that contains an array of pointers to instruction member functions,
-// for lookup during decoding. Will need to be populated in the same order as per
-// DECODE_TABLE, defined above.
-class lm32_func_table
-{
-public:
-    pFunc_t i[LM32_NUM_OPCODES];
-};
 
 #endif    

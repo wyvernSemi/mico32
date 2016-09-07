@@ -22,7 +22,7 @@
 // You should have received a copy of the GNU General Public License
 // along with cpumico32. If not, see <http://www.gnu.org/licenses/>.
 //
-// $Id: lm32_cpu.cpp,v 2.8 2016-09-03 07:44:09 simon Exp $
+// $Id: lm32_cpu.cpp,v 2.10 2016-09-06 15:24:04 simon Exp $
 // $Source: /home/simon/CVS/src/cpu/mico32/src/lm32_cpu.cpp,v $
 //
 //=============================================================
@@ -143,77 +143,73 @@ lm32_cpu::lm32_cpu (const int verbose_in,
     dcc_invalidate      = false;
     icc_invalidate      = false;
 
-    // Create some space for a lookup table of instruction functions 
-    // for this particular object
-    tbl_p = new lm32_func_table;
-
     // Populate the table with pointers to instruction member functions, 
     // in the order of opcode index
     int idx = 0;
-    ((lm32_func_table*)tbl_p)->i[idx++] = &lm32_cpu::lm32_srui;
-    ((lm32_func_table*)tbl_p)->i[idx++] = &lm32_cpu::lm32_nori;
-    ((lm32_func_table*)tbl_p)->i[idx++] = &lm32_cpu::lm32_muli;
-    ((lm32_func_table*)tbl_p)->i[idx++] = &lm32_cpu::lm32_sh;
-    ((lm32_func_table*)tbl_p)->i[idx++] = &lm32_cpu::lm32_lb;
-    ((lm32_func_table*)tbl_p)->i[idx++] = &lm32_cpu::lm32_sri;
-    ((lm32_func_table*)tbl_p)->i[idx++] = &lm32_cpu::lm32_xori;
-    ((lm32_func_table*)tbl_p)->i[idx++] = &lm32_cpu::lm32_lh;
-    ((lm32_func_table*)tbl_p)->i[idx++] = &lm32_cpu::lm32_andi;
-    ((lm32_func_table*)tbl_p)->i[idx++] = &lm32_cpu::lm32_xnori;
-    ((lm32_func_table*)tbl_p)->i[idx++] = &lm32_cpu::lm32_lw;
-    ((lm32_func_table*)tbl_p)->i[idx++] = &lm32_cpu::lm32_lhu;
-    ((lm32_func_table*)tbl_p)->i[idx++] = &lm32_cpu::lm32_sb;
-    ((lm32_func_table*)tbl_p)->i[idx++] = &lm32_cpu::lm32_addi;
-    ((lm32_func_table*)tbl_p)->i[idx++] = &lm32_cpu::lm32_ori;
-    ((lm32_func_table*)tbl_p)->i[idx++] = &lm32_cpu::lm32_sli;
-    ((lm32_func_table*)tbl_p)->i[idx++] = &lm32_cpu::lm32_lbu;
-    ((lm32_func_table*)tbl_p)->i[idx++] = &lm32_cpu::lm32_be;
-    ((lm32_func_table*)tbl_p)->i[idx++] = &lm32_cpu::lm32_bg;
-    ((lm32_func_table*)tbl_p)->i[idx++] = &lm32_cpu::lm32_bge;
-    ((lm32_func_table*)tbl_p)->i[idx++] = &lm32_cpu::lm32_bgeu;
-    ((lm32_func_table*)tbl_p)->i[idx++] = &lm32_cpu::lm32_bgu;
-    ((lm32_func_table*)tbl_p)->i[idx++] = &lm32_cpu::lm32_sw;
-    ((lm32_func_table*)tbl_p)->i[idx++] = &lm32_cpu::lm32_bne;
-    ((lm32_func_table*)tbl_p)->i[idx++] = &lm32_cpu::lm32_andhi;
-    ((lm32_func_table*)tbl_p)->i[idx++] = &lm32_cpu::lm32_cmpei;
-    ((lm32_func_table*)tbl_p)->i[idx++] = &lm32_cpu::lm32_cmpgi;
-    ((lm32_func_table*)tbl_p)->i[idx++] = &lm32_cpu::lm32_cmpgei;
-    ((lm32_func_table*)tbl_p)->i[idx++] = &lm32_cpu::lm32_cmpgeui;
-    ((lm32_func_table*)tbl_p)->i[idx++] = &lm32_cpu::lm32_cmpgui;
-    ((lm32_func_table*)tbl_p)->i[idx++] = &lm32_cpu::lm32_orhi;
-    ((lm32_func_table*)tbl_p)->i[idx++] = &lm32_cpu::lm32_cmpnei;
-    ((lm32_func_table*)tbl_p)->i[idx++] = &lm32_cpu::lm32_sru;
-    ((lm32_func_table*)tbl_p)->i[idx++] = &lm32_cpu::lm32_nor;
-    ((lm32_func_table*)tbl_p)->i[idx++] = &lm32_cpu::lm32_mul;
-    ((lm32_func_table*)tbl_p)->i[idx++] = &lm32_cpu::lm32_divu;
-    ((lm32_func_table*)tbl_p)->i[idx++] = &lm32_cpu::lm32_rcsr;
-    ((lm32_func_table*)tbl_p)->i[idx++] = &lm32_cpu::lm32_sr;
-    ((lm32_func_table*)tbl_p)->i[idx++] = &lm32_cpu::lm32_xor;
-    ((lm32_func_table*)tbl_p)->i[idx++] = &lm32_cpu::lm32_div;
-    ((lm32_func_table*)tbl_p)->i[idx++] = &lm32_cpu::lm32_and;
-    ((lm32_func_table*)tbl_p)->i[idx++] = &lm32_cpu::lm32_xnor;
-    ((lm32_func_table*)tbl_p)->i[idx++] = &lm32_cpu::lm32_rsrvd;
-    ((lm32_func_table*)tbl_p)->i[idx++] = &lm32_cpu::lm32_raise;
-    ((lm32_func_table*)tbl_p)->i[idx++] = &lm32_cpu::lm32_sextb;
-    ((lm32_func_table*)tbl_p)->i[idx++] = &lm32_cpu::lm32_add;
-    ((lm32_func_table*)tbl_p)->i[idx++] = &lm32_cpu::lm32_or;
-    ((lm32_func_table*)tbl_p)->i[idx++] = &lm32_cpu::lm32_sl;
-    ((lm32_func_table*)tbl_p)->i[idx++] = &lm32_cpu::lm32_b;
-    ((lm32_func_table*)tbl_p)->i[idx++] = &lm32_cpu::lm32_modu;
-    ((lm32_func_table*)tbl_p)->i[idx++] = &lm32_cpu::lm32_sub;
-    ((lm32_func_table*)tbl_p)->i[idx++] = &lm32_cpu::lm32_rsrvd;
-    ((lm32_func_table*)tbl_p)->i[idx++] = &lm32_cpu::lm32_wcsr;
-    ((lm32_func_table*)tbl_p)->i[idx++] = &lm32_cpu::lm32_mod;
-    ((lm32_func_table*)tbl_p)->i[idx++] = &lm32_cpu::lm32_call;
-    ((lm32_func_table*)tbl_p)->i[idx++] = &lm32_cpu::lm32_sexth;
-    ((lm32_func_table*)tbl_p)->i[idx++] = &lm32_cpu::lm32_bi;
-    ((lm32_func_table*)tbl_p)->i[idx++] = &lm32_cpu::lm32_cmpe;
-    ((lm32_func_table*)tbl_p)->i[idx++] = &lm32_cpu::lm32_cmpg;
-    ((lm32_func_table*)tbl_p)->i[idx++] = &lm32_cpu::lm32_cmpge;
-    ((lm32_func_table*)tbl_p)->i[idx++] = &lm32_cpu::lm32_cmpgeu;
-    ((lm32_func_table*)tbl_p)->i[idx++] = &lm32_cpu::lm32_cmpgu;
-    ((lm32_func_table*)tbl_p)->i[idx++] = &lm32_cpu::lm32_calli;
-    ((lm32_func_table*)tbl_p)->i[idx++] = &lm32_cpu::lm32_cmpne;
+    tbl_p[idx++] = &lm32_cpu::lm32_srui;
+    tbl_p[idx++] = &lm32_cpu::lm32_nori;
+    tbl_p[idx++] = &lm32_cpu::lm32_muli;
+    tbl_p[idx++] = &lm32_cpu::lm32_sh;
+    tbl_p[idx++] = &lm32_cpu::lm32_lb;
+    tbl_p[idx++] = &lm32_cpu::lm32_sri;
+    tbl_p[idx++] = &lm32_cpu::lm32_xori;
+    tbl_p[idx++] = &lm32_cpu::lm32_lh;
+    tbl_p[idx++] = &lm32_cpu::lm32_andi;
+    tbl_p[idx++] = &lm32_cpu::lm32_xnori;
+    tbl_p[idx++] = &lm32_cpu::lm32_lw;
+    tbl_p[idx++] = &lm32_cpu::lm32_lhu;
+    tbl_p[idx++] = &lm32_cpu::lm32_sb;
+    tbl_p[idx++] = &lm32_cpu::lm32_addi;
+    tbl_p[idx++] = &lm32_cpu::lm32_ori;
+    tbl_p[idx++] = &lm32_cpu::lm32_sli;
+    tbl_p[idx++] = &lm32_cpu::lm32_lbu;
+    tbl_p[idx++] = &lm32_cpu::lm32_be;
+    tbl_p[idx++] = &lm32_cpu::lm32_bg;
+    tbl_p[idx++] = &lm32_cpu::lm32_bge;
+    tbl_p[idx++] = &lm32_cpu::lm32_bgeu;
+    tbl_p[idx++] = &lm32_cpu::lm32_bgu;
+    tbl_p[idx++] = &lm32_cpu::lm32_sw;
+    tbl_p[idx++] = &lm32_cpu::lm32_bne;
+    tbl_p[idx++] = &lm32_cpu::lm32_andhi;
+    tbl_p[idx++] = &lm32_cpu::lm32_cmpei;
+    tbl_p[idx++] = &lm32_cpu::lm32_cmpgi;
+    tbl_p[idx++] = &lm32_cpu::lm32_cmpgei;
+    tbl_p[idx++] = &lm32_cpu::lm32_cmpgeui;
+    tbl_p[idx++] = &lm32_cpu::lm32_cmpgui;
+    tbl_p[idx++] = &lm32_cpu::lm32_orhi;
+    tbl_p[idx++] = &lm32_cpu::lm32_cmpnei;
+    tbl_p[idx++] = &lm32_cpu::lm32_sru;
+    tbl_p[idx++] = &lm32_cpu::lm32_nor;
+    tbl_p[idx++] = &lm32_cpu::lm32_mul;
+    tbl_p[idx++] = &lm32_cpu::lm32_divu;
+    tbl_p[idx++] = &lm32_cpu::lm32_rcsr;
+    tbl_p[idx++] = &lm32_cpu::lm32_sr;
+    tbl_p[idx++] = &lm32_cpu::lm32_xor;
+    tbl_p[idx++] = &lm32_cpu::lm32_div;
+    tbl_p[idx++] = &lm32_cpu::lm32_and;
+    tbl_p[idx++] = &lm32_cpu::lm32_xnor;
+    tbl_p[idx++] = &lm32_cpu::lm32_rsrvd;
+    tbl_p[idx++] = &lm32_cpu::lm32_raise;
+    tbl_p[idx++] = &lm32_cpu::lm32_sextb;
+    tbl_p[idx++] = &lm32_cpu::lm32_add;
+    tbl_p[idx++] = &lm32_cpu::lm32_or;
+    tbl_p[idx++] = &lm32_cpu::lm32_sl;
+    tbl_p[idx++] = &lm32_cpu::lm32_b;
+    tbl_p[idx++] = &lm32_cpu::lm32_modu;
+    tbl_p[idx++] = &lm32_cpu::lm32_sub;
+    tbl_p[idx++] = &lm32_cpu::lm32_rsrvd;
+    tbl_p[idx++] = &lm32_cpu::lm32_wcsr;
+    tbl_p[idx++] = &lm32_cpu::lm32_mod;
+    tbl_p[idx++] = &lm32_cpu::lm32_call;
+    tbl_p[idx++] = &lm32_cpu::lm32_sexth;
+    tbl_p[idx++] = &lm32_cpu::lm32_bi;
+    tbl_p[idx++] = &lm32_cpu::lm32_cmpe;
+    tbl_p[idx++] = &lm32_cpu::lm32_cmpg;
+    tbl_p[idx++] = &lm32_cpu::lm32_cmpge;
+    tbl_p[idx++] = &lm32_cpu::lm32_cmpgeu;
+    tbl_p[idx++] = &lm32_cpu::lm32_cmpgu;
+    tbl_p[idx++] = &lm32_cpu::lm32_calli;
+    tbl_p[idx++] = &lm32_cpu::lm32_cmpne;
 
 }
 
@@ -386,8 +382,6 @@ uint32_t lm32_cpu::lm32_read_mem (const uint32_t byte_addr_raw, const int type)
     // Local holder for read data
     uint32_t data;
     
-    // By default, do a local memory access
-    bool do_local_access       = true;
     int  mem_callback_delay;
 
     // Local cache state
@@ -436,14 +430,22 @@ uint32_t lm32_cpu::lm32_read_mem (const uint32_t byte_addr_raw, const int type)
             cache_words_per_line = dcache_p->get_line_width() >> 2;
         }
     }
+
+    // By default do a local memory access
+    bool do_local_access = true;
 #else
     // This fast calculation requires num_mem_bytes to be a power of 2
     uint32_t byte_addr = byte_addr_raw & num_mem_bytes_mask;
 #endif
 
+
     // If there's a memory access callback function, call it and flag if it's
-    // intercepted the access so no local access needed
-    if (pMemCallback != NULL)
+    // intercepted the access
+    if (pMemCallback != NULL
+#ifdef LM32_FAST_COMPILE
+        && !(byte_addr_raw >= mem_offset && byte_addr_raw < (mem_offset + num_mem_bytes))
+#endif
+        )
     {
         // Execute callback function
         mem_callback_delay = pMemCallback(byte_addr_raw, &data, type, cache_hit, state.cycle_count);
@@ -451,20 +453,25 @@ uint32_t lm32_cpu::lm32_read_mem (const uint32_t byte_addr_raw, const int type)
         // Advance time by the returned amount, if intercepted, and flag no local access
         if (mem_callback_delay != LM32_EXT_MEM_NOT_PROCESSED)
         {
+
 #ifndef LM32_FAST_COMPILE
+            do_local_access = false;
+
             // Cycle count is incremented by returned amount when not cached, or returned amount scaled for
             // the number of words to update a cache line if cached and a miss. When a cache hit, no wait
             // states are added
             state.cycle_count += (!cache_hit) ? (lm32_time_t)mem_callback_delay * (cache_access ? cache_words_per_line : 1) : 0;
 #endif
-            do_local_access = false;
         }
     }
-
-    // If no callback interception, do local memory access
-    if (do_local_access) 
+#ifdef LM32_FAST_COMPILE
+    else
     {
-#ifndef LM32_FAST_COMPILE
+#else
+    // If not a callback access, do local memory access
+    if (do_local_access)
+    {
+
         // Cycle count is incremented by memory wait states when not cached, or wait states scaled for
         // the number of words to update a cache line if cached and a miss. When a cache hit, no wait
         // states are added
@@ -555,9 +562,6 @@ uint32_t lm32_cpu::lm32_read_mem (const uint32_t byte_addr_raw, const int type)
 
 void lm32_cpu::lm32_write_mem(const uint32_t byte_addr_raw, const uint32_t data, const int type, const bool disable_cycle_count)
 {
-
-    // By default, do a local memory access
-    bool do_local_access = true;
     int  mem_callback_delay;
 
     // Make a copy of the input word to avoid possibility of callback over-writing
@@ -589,14 +593,22 @@ void lm32_cpu::lm32_write_mem(const uint32_t byte_addr_raw, const uint32_t data,
             exit(LM32_INTERNAL_ERROR);                                                          //LCOV_EXCL_LINE
         }
     }
+
+    // By default, do a local access
+    bool do_local_access = true;
+    
 #else
     // This fast calculation requires num_mem_bytes to be a power of 2
     uint32_t byte_addr = byte_addr_raw & num_mem_bytes_mask;
 #endif
 
-    // If there's a memory access callback function, call it and flag if it
-    // intercepted the access so no local access needed
-    if (pMemCallback != NULL) 
+    // If there's a memory access callback function, and not accessing internal memory,
+    // call it and flag if it intercepted the access
+    if (pMemCallback != NULL
+#ifdef LM32_FAST_COMPILE
+        && !(byte_addr_raw >= mem_offset && byte_addr_raw < (mem_offset + num_mem_bytes))
+#endif
+        )
     {
         // Execute callback function
         mem_callback_delay = pMemCallback(byte_addr_raw, &word, type, LM32_CACHE_MISS, state.cycle_count);
@@ -604,17 +616,20 @@ void lm32_cpu::lm32_write_mem(const uint32_t byte_addr_raw, const uint32_t data,
         // Advance time by the returned amount, if intercepted, and flag no local access
         if (mem_callback_delay != LM32_EXT_MEM_NOT_PROCESSED && !disable_cycle_count) 
         {
+
 #ifndef LM32_FAST_COMPILE
+            do_local_access = false;
             state.cycle_count += (lm32_time_t)mem_callback_delay;
 #endif
-            do_local_access = false;
         }
     }
-
-    // If no callback interception, do local memory access
+    // If not a callback address, do local memory access
+#ifdef LM32_FAST_COMPILE
+    else
+    {
+#else
     if (do_local_access)
     {
-#ifndef LM32_FAST_COMPILE
         // Add wait states for internal memory accesses
         if (!disable_cycle_count)
         {
@@ -1014,37 +1029,12 @@ bool lm32_cpu::execute_instruction (p_lm32_decode_t d)
     // Get decode information from the master table
     d->decode = &decode_table[table_index];
 
-    // Register immediate (RI)
-    if ((d->opcode & MASK_BIT31) == 0)
-    {
-        d->reg0_csr = (d->opcode & MASK_RI_REG0) >> RI_REG0_START_BIT;
-        d->reg1     = (d->opcode & MASK_RI_REG1) >> RI_REG1_START_BIT;
-        d->imm      = (d->opcode & MASK_RI_IMM)  >> RI_IMM_START_BIT;
-
-    // Immediate
-    } 
-    else if (((d->opcode & MASK_IMM_FORMAT) == IMM_FORMAT0) || ((d->opcode & MASK_IMM_FORMAT) == IMM_FORMAT1))
-    {
-        d->imm      = (d->opcode & MASK_I_IMM) >> I_IMM_START_BIT;
-        
-    // Control register (CR)
-    } 
-    else if (((d->opcode & MASK_CR_FORMAT) == RCSR_INSTR) || ((d->opcode & MASK_CR_FORMAT) == WCSR_INSTR))
-    {
-        d->reg0_csr = (d->opcode & MASK_CR_CSR)  >> MASK_CSR_START_BIT;
-
-        // RCSR uses reg2 and WCSR uses reg 1, so just get them both
-        d->reg1     = (d->opcode & MASK_CR_REG1) >> MASK_REG1_START_BIT;
-        d->reg2     = (d->opcode & MASK_CR_REG2) >> MASK_REG2_START_BIT;
-
-    // Register-Register (RR)
-    } 
-    else 
-    {
-        d->reg0_csr = (d->opcode & MASK_RR_REG0) >> RR_REG0_START_BIT;
-        d->reg1     = (d->opcode & MASK_RR_REG1) >> RR_REG1_START_BIT;
-        d->reg2     = (d->opcode & MASK_RR_REG2) >> RR_REG2_START_BIT;
-    }
+    // To avoid decoding the format of the instruction here, extract all possible
+    // fields and have the instruction function use the fields it needs.
+    d->reg0_csr = (d->opcode & MASK_Rx_REG0) >> Rx_REG0_START_BIT;
+    d->reg1     = (d->opcode & MASK_Rx_REG1) >> Rx_REG1_START_BIT;
+    d->reg2     = (d->opcode & MASK_Rx_REG2) >> Rx_REG2_START_BIT;
+    d->imm      =  d->opcode & ((d->opcode & MASK_BIT31) == 0 ? MASK_RI_IMM : MASK_I_IMM);
 
 #ifndef LM32_FAST_COMPILE
     // Check if we've reached an cycle count at disassemble start count,
@@ -1068,14 +1058,14 @@ bool lm32_cpu::execute_instruction (p_lm32_decode_t d)
     // Execute the indexed instruction
     if (disassemble_run == false) 
     {
-        (this->*((lm32_func_table *)tbl_p)->i[table_index])(d);
+        (this->*tbl_p[table_index])(d);
     } 
     else
     {
         state.pc = state.pc + 4;                                                        //LCOV_EXCL_LINE
     }
 #else
-    (this->*((lm32_func_table *)tbl_p)->i[table_index])(d);
+    (this->*tbl_p[table_index])(d);
     state.cycle_count += 1;
 #endif
     return false;
