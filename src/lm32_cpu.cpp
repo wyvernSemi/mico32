@@ -22,7 +22,7 @@
 // You should have received a copy of the GNU General Public License
 // along with cpumico32. If not, see <http://www.gnu.org/licenses/>.
 //
-// $Id: lm32_cpu.cpp,v 3.3 2016-09-15 18:14:04 simon Exp $
+// $Id: lm32_cpu.cpp,v 3.4 2016-09-15 19:24:55 simon Exp $
 // $Source: /home/simon/CVS/src/cpu/mico32/src/lm32_cpu.cpp,v $
 //
 //=============================================================
@@ -577,8 +577,8 @@ void lm32_cpu::lm32_write_mem(const uint32_t byte_addr_raw, const uint32_t data,
             exit(LM32_INTERNAL_ERROR);                                                  //LCOV_EXCL_LINE
          }
 
-         mem16 = (uint16_t*)mem;
-         mem32 = (uint32_t*)mem;
+         mem16 = (uint16_t*)mem;                                                        //LCOV_EXCL_LINE
+         mem32 = (uint32_t*)mem;                                                        //LCOV_EXCL_LINE
     }
 
 #ifndef LM32_FAST_COMPILE
@@ -589,8 +589,8 @@ void lm32_cpu::lm32_write_mem(const uint32_t byte_addr_raw, const uint32_t data,
     {
         if ((mem_tag = (uint8_t *)calloc(num_mem_bytes/sizeof(uint8_t), sizeof(uint8_t))) == NULL)
         {
-            fprintf(stderr, "***ERROR: memory allocation failure\n");                           //LCOV_EXCL_LINE
-            exit(LM32_INTERNAL_ERROR);                                                          //LCOV_EXCL_LINE
+            fprintf(stderr, "***ERROR: memory allocation failure\n");                    //LCOV_EXCL_LINE
+            exit(LM32_INTERNAL_ERROR);                                                   //LCOV_EXCL_LINE
         }
     }
 
@@ -879,7 +879,7 @@ bool lm32_cpu::process_exceptions()
             // termination. Return immediately with a 'true' status.
             if (state.wakeup_time_ext_int < 0)
             {
-                return true;
+                return true;                                                                    //LCOV_EXCL_LINE
             }
 
             // If not masked, flag any external interrupt
@@ -937,7 +937,7 @@ bool lm32_cpu::execute_instruction (p_lm32_decode_t d)
     // external callbacks requesting to terminate
     if (process_exceptions())
     {
-        return true;
+        return true;                                                                            //LCOV_EXCL_LINE
     }
 
 #ifndef LM32_FAST_COMPILE
@@ -988,7 +988,7 @@ bool lm32_cpu::execute_instruction (p_lm32_decode_t d)
     if (((verbose  && disassemble_active) || disassemble_run) && ((state.pc < (mem_offset + num_mem_bytes))
 #ifndef LNXMICO32
         // By default only disassemble memory labelled as instructions
-        && (mem_tag[state.pc - mem_offset] & MEM_INSTRUCTION_WR)
+        && (mem_tag[state.pc - mem_offset] & MEM_INSTRUCTION_WR)                                //LCOV_EXCL_LINE
 #endif
         ))
     {
