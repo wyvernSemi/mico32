@@ -21,7 +21,7 @@
 // You should have received a copy of the GNU General Public License
 // along with cpumico32. If not, see <http://www.gnu.org/licenses/>.
 //
-// $Id: lm32_cpu_disassembler.cpp,v 2.5 2016-09-03 07:44:05 simon Exp $
+// $Id: lm32_cpu_disassembler.cpp,v 3.1 2016-09-15 18:12:36 simon Exp $
 // $Source: /home/simon/CVS/src/cpu/mico32/src/lm32_cpu_disassembler.cpp,v $
 //
 //=============================================================
@@ -34,6 +34,70 @@
 
 #include "lm32_cpu.h"
 #include "lm32_cpu_mico32.h"
+
+// -------------------------------------------------------------------------
+// lm32_dump_registers()
+// 
+// Dump the registers to the specified output stream
+// 
+// -------------------------------------------------------------------------
+
+void lm32_cpu::lm32_dump_registers()
+{
+    int idx;
+
+    fprintf(ofp, "\n");
+    for(idx = 0; idx < LM32_NUM_OF_REGISTERS-6; idx++)
+    {
+        fprintf(ofp, "r%02d = 0x%08x  ", idx, state.r[idx]);
+
+        if ((idx % 4) == 3)
+        {
+            fprintf(ofp, "\n");
+        }
+    }
+
+    fprintf(ofp, "gp  = 0x%08x  ",  state.r[idx++]);
+    fprintf(ofp, "fp  = 0x%08x  ",  state.r[idx++]);
+
+    fprintf(ofp, "\n");
+    fprintf(ofp, "sp  = 0x%08x  ",  state.r[idx++]);
+    fprintf(ofp, "ra  = 0x%08x  ",  state.r[idx++]);
+    fprintf(ofp, "ea  = 0x%08x  ",  state.r[idx++]);
+    fprintf(ofp, "ba  = 0x%08x\n",  state.r[idx++]);
+
+    fprintf(ofp, "\n");
+    fprintf(ofp, "pc  = 0x%08x  ",  state.pc);
+    fprintf(ofp, "ie  = 0x%08x  ",  state.ie);
+    fprintf(ofp, "ip  = 0x%08x  ",  state.ip);
+    fprintf(ofp, "im  = 0x%08x\n",  state.im);
+
+    fprintf(ofp, "icc = 0x%08x  ",  state.icc);
+    fprintf(ofp, "dcc = 0x%08x  ",  state.dcc);
+    fprintf(ofp, "cfg = 0x%08x ",   state.cfg);
+    fprintf(ofp, "cfg2 = 0x%08x\n", state.cfg2);
+
+    fprintf(ofp, "cc  = 0x%08x  ",  (uint32_t)((state.cycle_count + cc_adjust) & 0xffffffffULL));
+    fprintf(ofp, "eba = 0x%08x ",   state.eba);
+
+    fprintf(ofp, "\n");
+
+    fprintf(ofp, "\n");
+    fprintf(ofp, "bp0 = 0x%08x  ",  state.bp0);
+    fprintf(ofp, "bp1 = 0x%08x  ",  state.bp1);
+    fprintf(ofp, "bp2 = 0x%08x  ",  state.bp2);
+    fprintf(ofp, "bp3 = 0x%08x\n",  state.bp3);
+
+    fprintf(ofp, "wp0 = 0x%08x  ",  state.wp0);
+    fprintf(ofp, "wp1 = 0x%08x  ",  state.wp1);
+    fprintf(ofp, "wp2 = 0x%08x  ",  state.wp2);
+    fprintf(ofp, "wp3 = 0x%08x\n",  state.wp3);
+
+    fprintf(ofp, "dc  = 0x%08x ",  state.dc);
+    fprintf(ofp, "deba = 0x%08x ",  state.deba);
+
+    fprintf(ofp, "\n");
+}
 
 // -------------------------------------------------------------------------
 // fmt_register()

@@ -23,7 +23,7 @@
 // You should have received a copy of the GNU General Public License
 // along with cpumico32. If not, see <http://www.gnu.org/licenses/>.
 //
-// $Id: cpumico32_c.c,v 2.4 2016-09-03 08:09:43 simon Exp $
+// $Id: cpumico32_c.c,v 3.0 2016-09-07 13:15:36 simon Exp $
 // $Source: /home/simon/CVS/src/cpu/mico32/src/cpumico32_c.c,v $
 //
 //=============================================================

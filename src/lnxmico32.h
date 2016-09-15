@@ -21,7 +21,7 @@
 // You should have received a copy of the GNU General Public License
 // along with lnxmico32. If not, see <http://www.gnu.org/licenses/>.
 //
-// $Id: lnxmico32.h,v 2.5 2016-09-03 07:44:09 simon Exp $
+// $Id: lnxmico32.h,v 3.1 2016-09-15 18:11:12 simon Exp $
 // $Source: /home/simon/CVS/src/cpu/mico32/src/lnxmico32.h,v $
 //
 //=============================================================
@@ -48,6 +48,8 @@
 #define LM32_KERNEL_BASE_ADDR           LM32_RAM_BASE_ADDR
 
 #define LM32_RAM_SIZE                   (64 * 1024 * 1024)
+#define LM32_RAM_MASK                   (LM32_RAM_SIZE - 1)
+#define LM32_PERIPH_MASK                0xf0000000
 
 #define LM32_CPU_FREQUENCY_MHZ          10
 #define LM32_CPU_FREQUENCY_HZ           (LM32_CPU_FREQUENCY_MHZ * 1000 * 1000)

@@ -35,6 +35,9 @@
     <ClCompile Include="..\..\src\lm32_cache.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\src\lm32_cpu_disassembler.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\src\lnxmico32.h">

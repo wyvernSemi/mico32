@@ -21,7 +21,7 @@
 # You should have received a copy of the GNU General Public License
 # along with lnxmico32. If not, see <http://www.gnu.org/licenses/>.
 #
-# $Id: makefile.lnx,v 2.5 2016-09-06 14:32:56 simon Exp $
+# $Id: makefile.lnx,v 3.2 2016-09-15 18:10:39 simon Exp $
 # $Source: /home/simon/CVS/src/cpu/mico32/makefile.lnx,v $
 # 
 ##########################################################
@@ -37,10 +37,10 @@ LIBBASENAME=libmico32
 # doing a build of the C top level program.
 ifneq ($(BUILDC),)
   TARGET=${BASENAME}_c
-  COVEXCL=${TARGET}.c lm32_cpu_disassembler.cpp lm32_cpu_c.cpp lm32_get_config.cpp
+  COVEXCL=${TARGET}.c lm32_cpu_disassembler.cpp lm32_cpu_c.cpp lm32_get_config.cpp lm32_cache.cpp
 else
   TARGET=${BASENAME}
-  COVEXCL=${TARGET}.cpp lm32_cpu_disassembler.cpp lm32_cpu_c.cpp lm32_get_config.cpp
+  COVEXCL=${TARGET}.cpp lm32_cpu_disassembler.cpp lm32_cpu_c.cpp lm32_get_config.cpp lm32_cache.cpp
 endif
 
 LIBTARGET=${LIBBASENAME}.a
@@ -70,7 +70,7 @@ ifeq (${OSTYPE}, Cygwin)
   COPTS=-Ofast -fomit-frame-pointer -march=native -DLNXMICO32 -DLM32_FAST_COMPILE
 else
   #COPTS=-g -fPIC -DLNXMICO32
-  COPTS=-Ofast -fPIC -DLNXMICO32 -DLM32_FAST_COMPILE
+  COPTS= -fPIC -Ofast -fomit-frame-pointer -march=native -DLNXMICO32 -DLM32_FAST_COMPILE
 endif
 
 COVOPTS=

@@ -22,7 +22,7 @@
 // You should have received a copy of the GNU General Public License
 // along with cpumico32. If not, see <http://www.gnu.org/licenses/>.
 //
-// $Id: lm32_cpu_inst.cpp,v 2.5 2016-09-03 07:44:05 simon Exp $
+// $Id: lm32_cpu_inst.cpp,v 3.2 2016-09-15 18:16:24 simon Exp $
 // $Source: /home/simon/CVS/src/cpu/mico32/src/lm32_cpu_inst.cpp,v $
 //
 //=============================================================
@@ -109,7 +109,6 @@ void lm32_cpu::lm32_rsrvd (const p_lm32_decode_t p)
 {
     // Unimplemented instruction raises an instruction bus error
     state.int_flags |= (1 << INT_ID_IBUSERROR);
-
     state.pc += 4;
 
 #ifndef LM32_FAST_COMPILE
@@ -123,21 +122,12 @@ void lm32_cpu::lm32_rsrvd (const p_lm32_decode_t p)
 
 void lm32_cpu::lm32_add (const p_lm32_decode_t p) 
 {
-#ifndef LM32_FAST_COMPILE
-    // Get any stall cycles on the instruction's input operands
-    state.cycle_count += calc_stall(p->reg0_csr, p->reg1, state.cycle_count);
-#endif
-
-    int32_t ry = (int32_t)state.r[p->reg0_csr];
-    int32_t rz = (int32_t)state.r[p->reg1];
-
-    int32_t rx = ry + rz;
-
-    state.r[p->reg2] = (uint32_t)rx;
-
+    state.r[p->reg2] = (int32_t)state.r[p->reg0_csr] + (int32_t)state.r[p->reg1];
     state.pc += 4;
 
 #ifndef LM32_FAST_COMPILE
+    // Get any stall cycles on the instruction's input operands
+    state.cycle_count += calc_stall(p->reg0_csr, p->reg1, state.cycle_count);
     rt[p->reg2] = state.cycle_count + p->decode->result_cycles;
     state.cycle_count += p->decode->issue_cycles;
 #endif
@@ -147,21 +137,12 @@ void lm32_cpu::lm32_add (const p_lm32_decode_t p)
 
 void lm32_cpu::lm32_addi (const p_lm32_decode_t p)
 {
-#ifndef LM32_FAST_COMPILE
-    // Get any stall cycles on the instruction's input operands
-    state.cycle_count += calc_stall(p->reg0_csr, NULL_REG_IDX, state.cycle_count);
-#endif
-
-    int32_t ry = (int32_t)state.r[p->reg0_csr];
-    int32_t imm = SIGN_EXT16(p->imm);
-
-    int32_t rx = ry + imm;
-
-    state.r[p->reg1] = (uint32_t)rx;
-
+    state.r[p->reg1] = (int32_t)state.r[p->reg0_csr] + SIGN_EXT16(p->imm);
     state.pc += 4;
 
 #ifndef LM32_FAST_COMPILE
+    // Get any stall cycles on the instruction's input operands
+    state.cycle_count += calc_stall(p->reg0_csr, NULL_REG_IDX, state.cycle_count);
     rt[p->reg1] = state.cycle_count + p->decode->result_cycles;
     state.cycle_count += p->decode->issue_cycles;
 #endif
@@ -171,21 +152,12 @@ void lm32_cpu::lm32_addi (const p_lm32_decode_t p)
 
 void lm32_cpu::lm32_sub (const p_lm32_decode_t p)
 {
-#ifndef LM32_FAST_COMPILE
-    // Get any stall cycles on the instruction's input operands
-    state.cycle_count += calc_stall(p->reg0_csr, p->reg1, state.cycle_count);
-#endif
-
-    int32_t ry = (int32_t)state.r[p->reg0_csr];
-    int32_t rz = (int32_t)state.r[p->reg1];
-
-    uint32_t rx = ry - rz;
-
-    state.r[p->reg2] = rx;
-
+    state.r[p->reg2] = (int32_t)state.r[p->reg0_csr] - (int32_t)state.r[p->reg1];
     state.pc += 4;
 
 #ifndef LM32_FAST_COMPILE
+    // Get any stall cycles on the instruction's input operands
+    state.cycle_count += calc_stall(p->reg0_csr, p->reg1, state.cycle_count);
     rt[p->reg2] = state.cycle_count + p->decode->result_cycles;
     state.cycle_count += p->decode->issue_cycles;
 #endif
@@ -198,19 +170,9 @@ void lm32_cpu::lm32_div (const p_lm32_decode_t p)
     // If divide implemented, execute instruction
     if (state.cfg & (1 << LM32_CFG_D))
     {
-#ifndef LM32_FAST_COMPILE
-        // Get any stall cycles on the instruction's input operands
-        state.cycle_count += calc_stall(p->reg0_csr, p->reg1, state.cycle_count);
-#endif
-
-        uint32_t rx;
-        int32_t ry = (int32_t)state.r[p->reg0_csr];
-        int32_t rz = (int32_t)state.r[p->reg1];
-
-        if (rz != 0)
+        if (state.r[p->reg1])
         {
-            rx = ry / rz;
-            state.r[p->reg2] = rx;
+            state.r[p->reg2] = (int32_t)state.r[p->reg0_csr] / (int32_t)state.r[p->reg1];
         } 
         else 
         {
@@ -220,10 +182,9 @@ void lm32_cpu::lm32_div (const p_lm32_decode_t p)
         state.pc += 4;
 
 #ifndef LM32_FAST_COMPILE
-        if(rz != 0)
-        {
-            rt[p->reg2] = state.cycle_count + p->decode->result_cycles;
-        }
+        // Get any stall cycles on the instruction's input operands
+        state.cycle_count += calc_stall(p->reg0_csr, p->reg1, state.cycle_count);
+        rt[p->reg2] = state.r[p->reg1] ? state.cycle_count + p->decode->result_cycles : rt[p->reg2];
         state.cycle_count += p->decode->issue_cycles;
 #endif
 
@@ -242,19 +203,9 @@ void lm32_cpu::lm32_divu (const p_lm32_decode_t p)
     // If divide implemented, execute instruction
     if (state.cfg & (1 << LM32_CFG_D)) 
     {
-#ifndef LM32_FAST_COMPILE
-        // Get any stall cycles on the instruction's input operands
-        state.cycle_count += calc_stall(p->reg0_csr, p->reg1, state.cycle_count);
-#endif
-
-        uint32_t rx;
-        uint32_t ry = state.r[p->reg0_csr];
-        uint32_t rz = state.r[p->reg1];
-
-        if (rz != 0)
+        if (state.r[p->reg1])
         {
-            rx = ry / rz;
-            state.r[p->reg2] = rx;
+            state.r[p->reg2] = state.r[p->reg0_csr] / state.r[p->reg1];
         } 
         else
         {
@@ -264,10 +215,9 @@ void lm32_cpu::lm32_divu (const p_lm32_decode_t p)
         state.pc += 4;
 
 #ifndef LM32_FAST_COMPILE
-        if (rz != 0)
-        {
-            rt[p->reg2] = state.cycle_count + p->decode->result_cycles;
-        }
+        // Get any stall cycles on the instruction's input operands
+        state.cycle_count += calc_stall(p->reg0_csr, p->reg1, state.cycle_count);
+        rt[p->reg2] = state.r[p->reg1] ? state.cycle_count + p->decode->result_cycles : rt[p->reg2];
         state.cycle_count += p->decode->issue_cycles;
 #endif
 
@@ -286,19 +236,9 @@ void lm32_cpu::lm32_mod (const p_lm32_decode_t p)
     // If divide implemented, execute instruction
     if (state.cfg & (1 << LM32_CFG_D))
     {
-#ifndef LM32_FAST_COMPILE
-        // Get any stall cycles on the instruction's input operands
-        state.cycle_count += calc_stall(p->reg0_csr, p->reg1, state.cycle_count);
-#endif
-
-        uint32_t rx;
-        int32_t  ry = (int32_t)state.r[p->reg0_csr];
-        int32_t  rz = (int32_t)state.r[p->reg1];
-
-        if (rz != 0)
+        if (state.r[p->reg1])
         {
-            rx = ry % rz;
-            state.r[p->reg2] = rx;
+            state.r[p->reg2] = (int32_t)state.r[p->reg0_csr] % (int32_t)state.r[p->reg1];
         } 
         else 
         {
@@ -308,10 +248,9 @@ void lm32_cpu::lm32_mod (const p_lm32_decode_t p)
         state.pc += 4;
 
 #ifndef LM32_FAST_COMPILE
-        if (rz != 0)
-        {
-            rt[p->reg2] = state.cycle_count + p->decode->result_cycles;
-        }
+        // Get any stall cycles on the instruction's input operands
+        state.cycle_count += calc_stall(p->reg0_csr, p->reg1, state.cycle_count);
+        rt[p->reg2] = state.r[p->reg1] ? state.cycle_count + p->decode->result_cycles : rt[p->reg2];
         state.cycle_count += p->decode->issue_cycles;
 #endif
     }
@@ -328,19 +267,9 @@ void lm32_cpu::lm32_modu (const p_lm32_decode_t p)
     // If divide implemented, execute instruction
     if (state.cfg & (1 << LM32_CFG_D)) 
     {
-#ifndef LM32_FAST_COMPILE
-        // Get any stall cycles on the instruction's input operands
-        state.cycle_count += calc_stall(p->reg0_csr, p->reg1, state.cycle_count);
-#endif
-
-        uint32_t rx;
-        uint32_t ry = state.r[p->reg0_csr];
-        uint32_t rz = state.r[p->reg1];
-
-        if (rz != 0) 
+        if (state.r[p->reg1]) 
         {
-            rx = ry % rz;
-            state.r[p->reg2] = rx;
+            state.r[p->reg2] = state.r[p->reg0_csr] % state.r[p->reg1];
         }
         else
         {
@@ -350,10 +279,9 @@ void lm32_cpu::lm32_modu (const p_lm32_decode_t p)
         state.pc += 4;
 
 #ifndef LM32_FAST_COMPILE
-        if(rz != 0)
-        {
-            rt[p->reg2] = state.cycle_count + p->decode->result_cycles;
-        }
+        // Get any stall cycles on the instruction's input operands
+        state.cycle_count += calc_stall(p->reg0_csr, p->reg1, state.cycle_count);
+        rt[p->reg2] = state.r[p->reg1] ? state.cycle_count + p->decode->result_cycles : rt[p->reg2];
         state.cycle_count += p->decode->issue_cycles;
 #endif
     }
@@ -370,21 +298,12 @@ void lm32_cpu::lm32_mul (const p_lm32_decode_t p)
     // If multiply implemented, execute instruction
     if (state.cfg & (1 << LM32_CFG_M))
     {
-#ifndef LM32_FAST_COMPILE
-        // Get any stall cycles on the instruction's input operands
-        state.cycle_count += calc_stall(p->reg0_csr, p->reg1, state.cycle_count);
-#endif
-
-        int64_t ry = state.r[p->reg0_csr];
-        int64_t rz = state.r[p->reg1];
-
-        uint32_t rx = (uint32_t)((ry * rz) & (uint64_t)WORD_MASK);
-
-        state.r[p->reg2] = rx;
-        
+        state.r[p->reg2] = (uint32_t)(state.r[p->reg0_csr] * state.r[p->reg1]);
         state.pc += 4;
     
 #ifndef LM32_FAST_COMPILE
+        // Get any stall cycles on the instruction's input operands
+        state.cycle_count += calc_stall(p->reg0_csr, p->reg1, state.cycle_count);
         rt[p->reg2] = state.cycle_count + p->decode->result_cycles;
         state.cycle_count += p->decode->issue_cycles;
 #endif
@@ -404,21 +323,12 @@ void lm32_cpu::lm32_muli (const p_lm32_decode_t p)
     // If multiply implemented, execute instruction
     if (state.cfg & (1 << LM32_CFG_M))
     {
-#ifndef LM32_FAST_COMPILE
-        // Get any stall cycles on the instruction's input operands
-        state.cycle_count += calc_stall(p->reg0_csr, NULL_REG_IDX, state.cycle_count);
-#endif
-
-        int64_t ry = state.r[p->reg0_csr];
-        int64_t imm = (int64_t)SIGN_EXT16(p->imm);
-
-        uint32_t rx = (uint32_t)((ry * imm) & (uint64_t)WORD_MASK);
-
-        state.r[p->reg1] = rx;
-
+        state.r[p->reg1] = (uint32_t)(state.r[p->reg0_csr] * SIGN_EXT16(p->imm));
         state.pc += 4;
 
 #ifndef LM32_FAST_COMPILE
+        // Get any stall cycles on the instruction's input operands
+        state.cycle_count += calc_stall(p->reg0_csr, NULL_REG_IDX, state.cycle_count);
         rt[p->reg1] = state.cycle_count + p->decode->result_cycles;
         state.cycle_count += p->decode->issue_cycles;
 #endif
@@ -438,18 +348,12 @@ void lm32_cpu::lm32_sextb (const p_lm32_decode_t p)
     // If sign extend implemented, execute instruction
     if (state.cfg & (1 << LM32_CFG_X))
     {
-#ifndef LM32_FAST_COMPILE
-        // Get any stall cycles on the instruction's input operands
-        state.cycle_count += calc_stall(p->reg0_csr, NULL_REG_IDX, state.cycle_count);
-#endif
-
-        int32_t rx = SIGN_EXT8(state.r[p->reg0_csr] & BYTE_MASK);
-
-        state.r[p->reg2] = rx;
-
+        state.r[p->reg2] = SIGN_EXT8(state.r[p->reg0_csr] & BYTE_MASK);
         state.pc += 4;
 
 #ifndef LM32_FAST_COMPILE
+        // Get any stall cycles on the instruction's input operands
+        state.cycle_count += calc_stall(p->reg0_csr, NULL_REG_IDX, state.cycle_count);
         rt[p->reg2] = state.cycle_count + p->decode->result_cycles;
         state.cycle_count += p->decode->issue_cycles;
 #endif
@@ -469,18 +373,12 @@ void lm32_cpu::lm32_sexth (const p_lm32_decode_t p)
     // If sign extend implemented, execute instruction
     if (state.cfg & (1 << LM32_CFG_X)) 
     {
-#ifndef LM32_FAST_COMPILE
-        // Get any stall cycles on the instruction's input operands
-        state.cycle_count += calc_stall(p->reg0_csr, NULL_REG_IDX, state.cycle_count);
-#endif
-
-        int32_t rx = SIGN_EXT16(state.r[p->reg0_csr] & HWORD_MASK);
-
-        state.r[p->reg2] = rx;
-
+        state.r[p->reg2] = SIGN_EXT16(state.r[p->reg0_csr] & HWORD_MASK);
         state.pc += 4;
 
 #ifndef LM32_FAST_COMPILE
+        // Get any stall cycles on the instruction's input operands
+        state.cycle_count += calc_stall(p->reg0_csr, NULL_REG_IDX, state.cycle_count);
         rt[p->reg2] = state.cycle_count + p->decode->result_cycles;
         state.cycle_count += p->decode->issue_cycles;
 #endif
@@ -499,21 +397,12 @@ void lm32_cpu::lm32_sexth (const p_lm32_decode_t p)
 
 void lm32_cpu::lm32_cmpe (const p_lm32_decode_t p)
 {
-#ifndef LM32_FAST_COMPILE
-    // Get any stall cycles on the instruction's input operands
-    state.cycle_count += calc_stall(p->reg0_csr, p->reg1, state.cycle_count);
-#endif
-
-    uint32_t ry = state.r[p->reg0_csr];
-    uint32_t rz = state.r[p->reg1];
-
-    uint32_t rx = (ry == rz) ? 1 : 0;
-
-    state.r[p->reg2] = rx;
-
+    state.r[p->reg2] = state.r[p->reg0_csr] == state.r[p->reg1];
     state.pc += 4;
 
 #ifndef LM32_FAST_COMPILE
+    // Get any stall cycles on the instruction's input operands
+    state.cycle_count += calc_stall(p->reg0_csr, p->reg1, state.cycle_count);
     rt[p->reg2] = state.cycle_count + p->decode->result_cycles;
     state.cycle_count += p->decode->issue_cycles;
 #endif
@@ -523,21 +412,12 @@ void lm32_cpu::lm32_cmpe (const p_lm32_decode_t p)
 
 void lm32_cpu::lm32_cmpei (const p_lm32_decode_t p)
 {
-#ifndef LM32_FAST_COMPILE
-    // Get any stall cycles on the instruction's input operands
-    state.cycle_count += calc_stall(p->reg0_csr, NULL_REG_IDX, state.cycle_count);
-#endif
-
-    int32_t ry = (int32_t)state.r[p->reg0_csr];
-    int32_t imm = SIGN_EXT16(p->imm);
-
-    uint32_t rx = (ry == imm) ? 1 : 0;
-
-    state.r[p->reg1] = rx;
-    
+    state.r[p->reg1] = (int32_t)state.r[p->reg0_csr] == SIGN_EXT16(p->imm);
     state.pc += 4;
 
 #ifndef LM32_FAST_COMPILE
+    // Get any stall cycles on the instruction's input operands
+    state.cycle_count += calc_stall(p->reg0_csr, NULL_REG_IDX, state.cycle_count);
     rt[p->reg1] = state.cycle_count + p->decode->result_cycles;
     state.cycle_count += p->decode->issue_cycles;
 #endif
@@ -547,21 +427,12 @@ void lm32_cpu::lm32_cmpei (const p_lm32_decode_t p)
 
 void lm32_cpu::lm32_cmpg (const p_lm32_decode_t p)
 {
-#ifndef LM32_FAST_COMPILE
-    // Get any stall cycles on the instruction's input operands
-    state.cycle_count += calc_stall(p->reg0_csr, p->reg1, state.cycle_count);
-#endif
-
-    int32_t ry = (int32_t)state.r[p->reg0_csr];
-    int32_t rz = (int32_t)state.r[p->reg1];
-
-    uint32_t rx = (ry > rz) ? 1 : 0;
-
-    state.r[p->reg2] = rx;
-
+    state.r[p->reg2] = (int32_t)state.r[p->reg0_csr] > (int32_t)state.r[p->reg1];
     state.pc += 4;
 
 #ifndef LM32_FAST_COMPILE
+    // Get any stall cycles on the instruction's input operands
+    state.cycle_count += calc_stall(p->reg0_csr, p->reg1, state.cycle_count);
     rt[p->reg2] = state.cycle_count + p->decode->result_cycles;
     state.cycle_count += p->decode->issue_cycles;
 #endif
@@ -571,21 +442,12 @@ void lm32_cpu::lm32_cmpg (const p_lm32_decode_t p)
 
 void lm32_cpu::lm32_cmpge (const p_lm32_decode_t p)
 {
-#ifndef LM32_FAST_COMPILE
-    // Get any stall cycles on the instruction's input operands
-    state.cycle_count += calc_stall(p->reg0_csr, p->reg1, state.cycle_count);
-#endif
-
-    int32_t ry = (int32_t)state.r[p->reg0_csr];
-    int32_t rz = (int32_t)state.r[p->reg1];
-
-    uint32_t rx = (ry >= rz) ? 1 : 0;
-
-    state.r[p->reg2] = rx;
-    
+    state.r[p->reg2] = (int32_t)state.r[p->reg0_csr] >= (int32_t)state.r[p->reg1];
     state.pc += 4;
 
 #ifndef LM32_FAST_COMPILE
+    // Get any stall cycles on the instruction's input operands
+    state.cycle_count += calc_stall(p->reg0_csr, p->reg1, state.cycle_count);
     rt[p->reg2] = state.cycle_count + p->decode->result_cycles;
     state.cycle_count += p->decode->issue_cycles;
 #endif
@@ -595,21 +457,12 @@ void lm32_cpu::lm32_cmpge (const p_lm32_decode_t p)
 
 void lm32_cpu::lm32_cmpgei (const p_lm32_decode_t p)
 {
-#ifndef LM32_FAST_COMPILE
-    // Get any stall cycles on the instruction's input operands
-    state.cycle_count += calc_stall(p->reg0_csr, NULL_REG_IDX, state.cycle_count);
-#endif
-
-    int32_t ry = (int32_t)state.r[p->reg0_csr];
-    int32_t imm = SIGN_EXT16(p->imm);
-
-    uint32_t rx = (ry >= imm) ? 1 : 0;
-
-    state.r[p->reg1] = rx;
-    
+    state.r[p->reg1] = (int32_t)state.r[p->reg0_csr] >= SIGN_EXT16(p->imm);
     state.pc += 4;
 
 #ifndef LM32_FAST_COMPILE
+    // Get any stall cycles on the instruction's input operands
+    state.cycle_count += calc_stall(p->reg0_csr, NULL_REG_IDX, state.cycle_count);
     rt[p->reg1] = state.cycle_count + p->decode->result_cycles;
     state.cycle_count += p->decode->issue_cycles;
 #endif
@@ -619,21 +472,12 @@ void lm32_cpu::lm32_cmpgei (const p_lm32_decode_t p)
 
 void lm32_cpu::lm32_cmpgeu (const p_lm32_decode_t p)
 {
-#ifndef LM32_FAST_COMPILE
-    // Get any stall cycles on the instruction's input operands
-    state.cycle_count += calc_stall(p->reg0_csr, p->reg1, state.cycle_count);
-#endif
-
-    uint32_t ry = state.r[p->reg0_csr];
-    uint32_t rz = state.r[p->reg1];
-
-    uint32_t rx = (ry >= rz) ? 1 : 0;
-
-    state.r[p->reg2] = rx;
-
+    state.r[p->reg2] = state.r[p->reg0_csr] >= state.r[p->reg1];
     state.pc += 4;
 
 #ifndef LM32_FAST_COMPILE
+    // Get any stall cycles on the instruction's input operands
+    state.cycle_count += calc_stall(p->reg0_csr, p->reg1, state.cycle_count);
     rt[p->reg2] = state.cycle_count + p->decode->result_cycles;
     state.cycle_count += p->decode->issue_cycles;
 #endif
@@ -643,21 +487,12 @@ void lm32_cpu::lm32_cmpgeu (const p_lm32_decode_t p)
 
 void lm32_cpu::lm32_cmpgeui (const p_lm32_decode_t p)
 {
-#ifndef LM32_FAST_COMPILE
-    // Get any stall cycles on the instruction's input operands
-    state.cycle_count += calc_stall(p->reg0_csr, NULL_REG_IDX, state.cycle_count);
-#endif
-
-    uint32_t ry = state.r[p->reg0_csr];
-    uint32_t imm = p->imm;
-
-    uint32_t rx = (ry >= imm) ? 1 : 0;
-
-    state.r[p->reg1] = rx;
-
+    state.r[p->reg1] = state.r[p->reg0_csr] >= p->imm;
     state.pc += 4;
 
 #ifndef LM32_FAST_COMPILE
+    // Get any stall cycles on the instruction's input operands
+    state.cycle_count += calc_stall(p->reg0_csr, NULL_REG_IDX, state.cycle_count);
     rt[p->reg1] = state.cycle_count + p->decode->result_cycles;
     state.cycle_count += p->decode->issue_cycles;
 #endif
@@ -667,21 +502,12 @@ void lm32_cpu::lm32_cmpgeui (const p_lm32_decode_t p)
 
 void lm32_cpu::lm32_cmpgi (const p_lm32_decode_t p) 
 {
-#ifndef LM32_FAST_COMPILE
-    // Get any stall cycles on the instruction's input operands
-    state.cycle_count += calc_stall(p->reg0_csr, NULL_REG_IDX, state.cycle_count);
-#endif
-
-    int32_t ry = (int32_t)state.r[p->reg0_csr];
-    int32_t imm = SIGN_EXT16(p->imm);
-
-    uint32_t rx = (ry > imm) ? 1 : 0;
-
-    state.r[p->reg1] = rx;
-
+    state.r[p->reg1] = (int32_t)state.r[p->reg0_csr] > SIGN_EXT16(p->imm);
     state.pc += 4;
 
 #ifndef LM32_FAST_COMPILE
+    // Get any stall cycles on the instruction's input operands
+    state.cycle_count += calc_stall(p->reg0_csr, NULL_REG_IDX, state.cycle_count);
     rt[p->reg1] = state.cycle_count + p->decode->result_cycles;
     state.cycle_count += p->decode->issue_cycles;
 #endif
@@ -691,21 +517,12 @@ void lm32_cpu::lm32_cmpgi (const p_lm32_decode_t p)
 
 void lm32_cpu::lm32_cmpgu (const p_lm32_decode_t p)
 {
-#ifndef LM32_FAST_COMPILE
-    // Get any stall cycles on the instruction's input operands
-    state.cycle_count += calc_stall(p->reg0_csr, p->reg1, state.cycle_count);
-#endif
-
-    uint32_t ry = state.r[p->reg0_csr];
-    uint32_t rz = state.r[p->reg1];
-
-    uint32_t rx = (ry > rz) ? 1 : 0;
-
-    state.r[p->reg2] = rx;
-
+    state.r[p->reg2] = state.r[p->reg0_csr] > state.r[p->reg1];
     state.pc += 4;
 
 #ifndef LM32_FAST_COMPILE
+    // Get any stall cycles on the instruction's input operands
+    state.cycle_count += calc_stall(p->reg0_csr, p->reg1, state.cycle_count);
     rt[p->reg2] = state.cycle_count + p->decode->result_cycles;
     state.cycle_count += p->decode->issue_cycles;
 #endif
@@ -715,21 +532,12 @@ void lm32_cpu::lm32_cmpgu (const p_lm32_decode_t p)
 
 void lm32_cpu::lm32_cmpgui (const p_lm32_decode_t p)
 {
-#ifndef LM32_FAST_COMPILE
-    // Get any stall cycles on the instruction's input operands
-    state.cycle_count += calc_stall(p->reg0_csr, NULL_REG_IDX, state.cycle_count);
-#endif
-
-    uint32_t ry  = state.r[p->reg0_csr];
-    uint32_t imm = p->imm;
-
-    uint32_t rx = (ry > imm) ? 1 : 0;
-
-    state.r[p->reg1] = rx;
-
+    state.r[p->reg1] = state.r[p->reg0_csr] >  p->imm;
     state.pc += 4;
 
 #ifndef LM32_FAST_COMPILE
+    // Get any stall cycles on the instruction's input operands
+    state.cycle_count += calc_stall(p->reg0_csr, NULL_REG_IDX, state.cycle_count);
     rt[p->reg1] = state.cycle_count + p->decode->result_cycles;
     state.cycle_count += p->decode->issue_cycles;
 #endif
@@ -739,21 +547,12 @@ void lm32_cpu::lm32_cmpgui (const p_lm32_decode_t p)
 
 void lm32_cpu::lm32_cmpne (const p_lm32_decode_t p)
 {
-#ifndef LM32_FAST_COMPILE
-    // Get any stall cycles on the instruction's input operands
-    state.cycle_count += calc_stall(p->reg0_csr, p->reg1, state.cycle_count);
-#endif
-
-    uint32_t ry = state.r[p->reg0_csr];
-    uint32_t rz = state.r[p->reg1];
-
-    uint32_t rx = (ry != rz) ? 1 : 0;
-
-    state.r[p->reg2] = rx;
-
+    state.r[p->reg2] = state.r[p->reg0_csr] != state.r[p->reg1];
     state.pc += 4;
 
 #ifndef LM32_FAST_COMPILE
+    // Get any stall cycles on the instruction's input operands
+    state.cycle_count += calc_stall(p->reg0_csr, p->reg1, state.cycle_count);
     rt[p->reg2] = state.cycle_count + p->decode->result_cycles;
     state.cycle_count += p->decode->issue_cycles;
 #endif
@@ -763,21 +562,12 @@ void lm32_cpu::lm32_cmpne (const p_lm32_decode_t p)
 
 void lm32_cpu::lm32_cmpnei (const p_lm32_decode_t p)
 {
-#ifndef LM32_FAST_COMPILE
-    // Get any stall cycles on the instruction's input operands
-    state.cycle_count += calc_stall(p->reg0_csr, NULL_REG_IDX, state.cycle_count);
-#endif
-
-    uint32_t ry  = state.r[p->reg0_csr];
-    uint32_t imm = SIGN_EXT16(p->imm);
-
-    uint32_t rx = (ry != imm) ? 1 : 0;
-
-    state.r[p->reg1] = rx;
-
+    state.r[p->reg1] = state.r[p->reg0_csr] != SIGN_EXT16(p->imm);
     state.pc += 4;
 
 #ifndef LM32_FAST_COMPILE
+    // Get any stall cycles on the instruction's input operands
+    state.cycle_count += calc_stall(p->reg0_csr, NULL_REG_IDX, state.cycle_count);
     rt[p->reg1] = state.cycle_count + p->decode->result_cycles;
     state.cycle_count += p->decode->issue_cycles;
 #endif
@@ -792,21 +582,12 @@ void lm32_cpu::lm32_sl (const p_lm32_decode_t p)
     // If shifter implemented, execute instruction
     if (state.cfg & (1 << LM32_CFG_S))
     {
-#ifndef LM32_FAST_COMPILE
-        // Get any stall cycles on the instruction's input operands
-        state.cycle_count += calc_stall(p->reg0_csr, p->reg1, state.cycle_count);
-#endif
-
-        uint32_t ry = state.r[p->reg0_csr];
-        uint32_t rz = state.r[p->reg1] & BIT5_MASK;
-
-        uint32_t rx = ry << rz;
-
-        state.r[p->reg2] = rx;
-
+        state.r[p->reg2] = state.r[p->reg0_csr] << state.r[p->reg1];
         state.pc += 4;
 
 #ifndef LM32_FAST_COMPILE
+        // Get any stall cycles on the instruction's input operands
+        state.cycle_count += calc_stall(p->reg0_csr, p->reg1, state.cycle_count);
         rt[p->reg2] = state.cycle_count + p->decode->result_cycles;
         state.cycle_count += p->decode->issue_cycles;
 #endif
@@ -826,21 +607,12 @@ void lm32_cpu::lm32_sli (const p_lm32_decode_t p)
     // If shifter implemented, execute instruction
     if (state.cfg & (1 << LM32_CFG_S)) 
     {
-#ifndef LM32_FAST_COMPILE
-        // Get any stall cycles on the instruction's input operands
-        state.cycle_count += calc_stall(p->reg0_csr, NULL_REG_IDX, state.cycle_count);
-#endif
-
-        uint32_t ry = state.r[p->reg0_csr];
-        uint32_t imm = p->imm & BIT5_MASK;
-
-        uint32_t rx = ry << imm;
-
-        state.r[p->reg1] = rx;
-
+        state.r[p->reg1] = state.r[p->reg0_csr] << p->imm;
         state.pc += 4;
 
 #ifndef LM32_FAST_COMPILE
+        // Get any stall cycles on the instruction's input operands
+        state.cycle_count += calc_stall(p->reg0_csr, NULL_REG_IDX, state.cycle_count);
         rt[p->reg1] = state.cycle_count + p->decode->result_cycles;
         state.cycle_count += p->decode->issue_cycles;
 #endif
@@ -860,21 +632,13 @@ void lm32_cpu::lm32_sr (const p_lm32_decode_t p)
     // If shifter implemented, execute instruction
     if (state.cfg & (1 << LM32_CFG_S))
     {
-#ifndef LM32_FAST_COMPILE
-        // Get any stall cycles on the instruction's input operands
-        state.cycle_count += calc_stall(p->reg0_csr, p->reg1, state.cycle_count);
-#endif
-
-        uint32_t ry = state.r[p->reg0_csr];
-        uint32_t rz = state.r[p->reg1] & BIT5_MASK;
-
-        uint32_t rx = (ry >> rz) | ((ry & MASK_SIGN_BIT32) ? ~(WORD_MASK >> rz) : 0);
-
-        state.r[p->reg2] = rx;
-
+        state.r[p->reg2] = (state.r[p->reg0_csr] >> state.r[p->reg1]) | 
+                           ((state.r[p->reg0_csr] & MASK_SIGN_BIT32) ? ~(WORD_MASK >>state.r[p->reg1]) : 0);
         state.pc += 4;
 
 #ifndef LM32_FAST_COMPILE
+        // Get any stall cycles on the instruction's input operands
+        state.cycle_count += calc_stall(p->reg0_csr, p->reg1, state.cycle_count);
         rt[p->reg2] = state.cycle_count + p->decode->result_cycles;
         state.cycle_count += p->decode->issue_cycles;
 #endif
@@ -894,21 +658,13 @@ void lm32_cpu::lm32_sri (const p_lm32_decode_t p)
     // If shifter implemented, execute instruction
     if (state.cfg & (1 << LM32_CFG_S))
     {
-#ifndef LM32_FAST_COMPILE
-        // Get any stall cycles on the instruction's input operands
-        state.cycle_count += calc_stall(p->reg0_csr, NULL_REG_IDX, state.cycle_count);
-#endif
-
-        uint32_t ry = state.r[p->reg0_csr];
-        uint32_t imm = p->imm & 0x1f;
-
-        uint32_t rx = (ry >> imm) | ((ry & MASK_SIGN_BIT32) ? ~(WORD_MASK >> imm) : 0);
-
-        state.r[p->reg1] = rx;
-
+        state.r[p->reg1] = (state.r[p->reg0_csr] >> p->imm) | 
+                           ((state.r[p->reg0_csr] & MASK_SIGN_BIT32) ? ~(WORD_MASK >> p->imm) : 0);
         state.pc += 4;
 
 #ifndef LM32_FAST_COMPILE
+        // Get any stall cycles on the instruction's input operands
+        state.cycle_count += calc_stall(p->reg0_csr, NULL_REG_IDX, state.cycle_count);
         rt[p->reg1] = state.cycle_count + p->decode->result_cycles;
         state.cycle_count += p->decode->issue_cycles;
 #endif
@@ -928,21 +684,12 @@ void lm32_cpu::lm32_sru (const p_lm32_decode_t p)
     // If shifter implemented, execute instruction
     if (state.cfg & (1 << LM32_CFG_S)) 
     {
-#ifndef LM32_FAST_COMPILE
-        // Get any stall cycles on the instruction's input operands
-        state.cycle_count += calc_stall(p->reg0_csr, p->reg1, state.cycle_count);
-#endif
-
-        uint32_t ry = state.r[p->reg0_csr];
-        uint32_t rz = state.r[p->reg1] & BIT5_MASK;
-
-        uint32_t rx = ry >> rz;
-
-        state.r[p->reg2] = rx;
-        
+        state.r[p->reg2] = state.r[p->reg0_csr] >> state.r[p->reg1];  
         state.pc += 4;
 
 #ifndef LM32_FAST_COMPILE
+        // Get any stall cycles on the instruction's input operands
+        state.cycle_count += calc_stall(p->reg0_csr, p->reg1, state.cycle_count);
         rt[p->reg2] = state.cycle_count + p->decode->result_cycles;
         state.cycle_count += p->decode->issue_cycles;
 #endif
@@ -962,21 +709,12 @@ void lm32_cpu::lm32_srui (const p_lm32_decode_t p)
     // If shifter implemented, execute instruction
     if (state.cfg & (1 << LM32_CFG_S))
     {
-#ifndef LM32_FAST_COMPILE
-        // Get any stall cycles on the instruction's input operands
-        state.cycle_count += calc_stall(p->reg0_csr, NULL_REG_IDX, state.cycle_count);
-#endif
-
-        uint32_t ry = state.r[p->reg0_csr];
-        uint32_t imm = p->imm & BIT5_MASK;
-
-        uint32_t rx = ry >> imm;
-
-        state.r[p->reg1] = rx;
-        
+        state.r[p->reg1] = state.r[p->reg0_csr] >> p->imm;
         state.pc += 4;
 
 #ifndef LM32_FAST_COMPILE
+        // Get any stall cycles on the instruction's input operands
+        state.cycle_count += calc_stall(p->reg0_csr, NULL_REG_IDX, state.cycle_count);
         rt[p->reg1] = state.cycle_count + p->decode->result_cycles;
         state.cycle_count += p->decode->issue_cycles;
 #endif
@@ -995,21 +733,12 @@ void lm32_cpu::lm32_srui (const p_lm32_decode_t p)
 
 void lm32_cpu::lm32_and (const p_lm32_decode_t p)
 {
-#ifndef LM32_FAST_COMPILE
-    // Get any stall cycles on the instruction's input operands
-    state.cycle_count += calc_stall(p->reg0_csr, p->reg1, state.cycle_count);
-#endif
-
-    uint32_t ry = state.r[p->reg0_csr];
-    uint32_t rz = state.r[p->reg1];
-
-    uint32_t rx = ry & rz;
-
-    state.r[p->reg2] = rx;
-
+    state.r[p->reg2] = state.r[p->reg0_csr] & state.r[p->reg1];
     state.pc += 4;
 
 #ifndef LM32_FAST_COMPILE
+    // Get any stall cycles on the instruction's input operands
+    state.cycle_count += calc_stall(p->reg0_csr, p->reg1, state.cycle_count);
     rt[p->reg2] = state.cycle_count + p->decode->result_cycles;
     state.cycle_count += p->decode->issue_cycles;
 #endif
@@ -1019,21 +748,12 @@ void lm32_cpu::lm32_and (const p_lm32_decode_t p)
 
 void lm32_cpu::lm32_andhi (const p_lm32_decode_t p)
 {
-#ifndef LM32_FAST_COMPILE
-    // Get any stall cycles on the instruction's input operands
-    state.cycle_count += calc_stall(p->reg0_csr, NULL_REG_IDX, state.cycle_count);
-#endif
-
-    uint32_t ry = state.r[p->reg0_csr];
-    uint32_t imm = p->imm;
-
-    uint32_t rx = ry & (imm << 16);
-
-    state.r[p->reg1] = rx;
-
+    state.r[p->reg1] = state.r[p->reg0_csr] & (p->imm << 16);
     state.pc += 4;
 
 #ifndef LM32_FAST_COMPILE
+    // Get any stall cycles on the instruction's input operands
+    state.cycle_count += calc_stall(p->reg0_csr, NULL_REG_IDX, state.cycle_count);
     rt[p->reg1] = state.cycle_count + p->decode->result_cycles;
     state.cycle_count += p->decode->issue_cycles;
 #endif
@@ -1043,21 +763,12 @@ void lm32_cpu::lm32_andhi (const p_lm32_decode_t p)
 
 void lm32_cpu::lm32_andi (const p_lm32_decode_t p)
 {
-#ifndef LM32_FAST_COMPILE
-    // Get any stall cycles on the instruction's input operands
-    state.cycle_count += calc_stall(p->reg0_csr, NULL_REG_IDX, state.cycle_count);
-#endif
-
-    uint32_t ry = state.r[p->reg0_csr];
-    uint32_t imm = p->imm;
-
-    uint32_t rx = ry & imm;
-
-    state.r[p->reg1] = rx;
-
+    state.r[p->reg1] = state.r[p->reg0_csr] & p->imm;
     state.pc += 4;
 
 #ifndef LM32_FAST_COMPILE
+    // Get any stall cycles on the instruction's input operands
+    state.cycle_count += calc_stall(p->reg0_csr, NULL_REG_IDX, state.cycle_count);
     rt[p->reg1] = state.cycle_count + p->decode->result_cycles;
     state.cycle_count += p->decode->issue_cycles;
 #endif
@@ -1067,21 +778,12 @@ void lm32_cpu::lm32_andi (const p_lm32_decode_t p)
 
 void lm32_cpu::lm32_nor (const p_lm32_decode_t p)
 {
-#ifndef LM32_FAST_COMPILE
-    // Get any stall cycles on the instruction's input operands
-    state.cycle_count += calc_stall(p->reg0_csr, p->reg1, state.cycle_count);
-#endif
-
-    uint32_t ry = state.r[p->reg0_csr];
-    uint32_t rz = state.r[p->reg1];
-
-    uint32_t rx = ~(ry | rz);
-
-    state.r[p->reg2] = rx;
-
+    state.r[p->reg2] = ~(state.r[p->reg0_csr] | state.r[p->reg1]);
     state.pc += 4;
 
 #ifndef LM32_FAST_COMPILE
+    // Get any stall cycles on the instruction's input operands
+    state.cycle_count += calc_stall(p->reg0_csr, p->reg1, state.cycle_count);
     rt[p->reg2] = state.cycle_count + p->decode->result_cycles;
     state.cycle_count += p->decode->issue_cycles;
 #endif
@@ -1091,21 +793,12 @@ void lm32_cpu::lm32_nor (const p_lm32_decode_t p)
 
 void lm32_cpu::lm32_nori (const p_lm32_decode_t p)
 {
-#ifndef LM32_FAST_COMPILE
-    // Get any stall cycles on the instruction's input operands
-    state.cycle_count += calc_stall(p->reg0_csr, NULL_REG_IDX, state.cycle_count);
-#endif
-
-    uint32_t ry = state.r[p->reg0_csr];
-    uint32_t imm = p->imm;
-
-    uint32_t rx = ~(ry | imm);
-
-    state.r[p->reg1] = rx;
-
+    state.r[p->reg1] = ~(state.r[p->reg0_csr] | p->imm);
     state.pc += 4;
 
 #ifndef LM32_FAST_COMPILE
+    // Get any stall cycles on the instruction's input operands
+    state.cycle_count += calc_stall(p->reg0_csr, NULL_REG_IDX, state.cycle_count);
     rt[p->reg1] = state.cycle_count + p->decode->result_cycles;
     state.cycle_count += p->decode->issue_cycles;
 #endif
@@ -1115,21 +808,12 @@ void lm32_cpu::lm32_nori (const p_lm32_decode_t p)
 
 void lm32_cpu::lm32_or (const p_lm32_decode_t p)
 {
-#ifndef LM32_FAST_COMPILE
-    // Get any stall cycles on the instruction's input operands
-    state.cycle_count += calc_stall(p->reg0_csr, p->reg1, state.cycle_count);
-#endif
-
-    uint32_t ry = state.r[p->reg0_csr];
-    uint32_t rz = state.r[p->reg1];
-
-    uint32_t rx = ry | rz;
-
-    state.r[p->reg2] = rx;
-
+    state.r[p->reg2] = state.r[p->reg0_csr] | state.r[p->reg1];
     state.pc += 4;
 
 #ifndef LM32_FAST_COMPILE
+    // Get any stall cycles on the instruction's input operands
+    state.cycle_count += calc_stall(p->reg0_csr, p->reg1, state.cycle_count);
     rt[p->reg2] = state.cycle_count + p->decode->result_cycles;
     state.cycle_count += p->decode->issue_cycles;
 #endif
@@ -1139,21 +823,12 @@ void lm32_cpu::lm32_or (const p_lm32_decode_t p)
 
 void lm32_cpu::lm32_orhi (const p_lm32_decode_t p)
 {
-#ifndef LM32_FAST_COMPILE
-    // Get any stall cycles on the instruction's input operands
-    state.cycle_count += calc_stall(p->reg0_csr, NULL_REG_IDX, state.cycle_count);
-#endif
-
-    uint32_t ry = state.r[p->reg0_csr];
-    uint32_t imm = p->imm;
-
-    uint32_t rx = ry | (imm << 16);
-
-    state.r[p->reg1] = rx;
-
+    state.r[p->reg1] = state.r[p->reg0_csr] | (p->imm << 16);
     state.pc += 4;
 
 #ifndef LM32_FAST_COMPILE
+    // Get any stall cycles on the instruction's input operands
+    state.cycle_count += calc_stall(p->reg0_csr, NULL_REG_IDX, state.cycle_count);
     rt[p->reg1] = state.cycle_count + p->decode->result_cycles;
     state.cycle_count += p->decode->issue_cycles;
 #endif
@@ -1163,21 +838,12 @@ void lm32_cpu::lm32_orhi (const p_lm32_decode_t p)
 
 void lm32_cpu::lm32_ori (const p_lm32_decode_t p)
 {
-#ifndef LM32_FAST_COMPILE
-    // Get any stall cycles on the instruction's input operands
-    state.cycle_count += calc_stall(p->reg0_csr, NULL_REG_IDX, state.cycle_count);
-#endif
-
-    uint32_t ry = state.r[p->reg0_csr];
-    uint32_t imm = p->imm;
-
-    uint32_t rx = ry | imm;
-
-    state.r[p->reg1] = rx;
-
+    state.r[p->reg1] = state.r[p->reg0_csr] | p->imm;
     state.pc += 4;
 
 #ifndef LM32_FAST_COMPILE
+    // Get any stall cycles on the instruction's input operands
+    state.cycle_count += calc_stall(p->reg0_csr, NULL_REG_IDX, state.cycle_count);
     rt[p->reg1] = state.cycle_count + p->decode->result_cycles;
     state.cycle_count += p->decode->issue_cycles;
 #endif
@@ -1187,21 +853,12 @@ void lm32_cpu::lm32_ori (const p_lm32_decode_t p)
 
 void lm32_cpu::lm32_xnor (const p_lm32_decode_t p)
 {
-#ifndef LM32_FAST_COMPILE
-    // Get any stall cycles on the instruction's input operands
-    state.cycle_count += calc_stall(p->reg0_csr, p->reg1, state.cycle_count);
-#endif
-
-    uint32_t ry = state.r[p->reg0_csr];
-    uint32_t rz = state.r[p->reg1];
-
-    uint32_t rx = ~(ry ^ rz);
-
-    state.r[p->reg2] = rx;
-
+    state.r[p->reg2] = ~(state.r[p->reg0_csr] ^ state.r[p->reg1]);
     state.pc += 4;
 
 #ifndef LM32_FAST_COMPILE
+    // Get any stall cycles on the instruction's input operands
+    state.cycle_count += calc_stall(p->reg0_csr, p->reg1, state.cycle_count);
     rt[p->reg2] = state.cycle_count + p->decode->result_cycles;
     state.cycle_count += p->decode->issue_cycles;
 #endif
@@ -1211,21 +868,12 @@ void lm32_cpu::lm32_xnor (const p_lm32_decode_t p)
 
 void lm32_cpu::lm32_xnori (const p_lm32_decode_t p)
 {
-#ifndef LM32_FAST_COMPILE
-    // Get any stall cycles on the instruction's input operands
-    state.cycle_count += calc_stall(p->reg0_csr, NULL_REG_IDX, state.cycle_count);
-#endif
-
-    uint32_t ry = state.r[p->reg0_csr];
-    uint32_t imm = p->imm;
-
-    uint32_t rx = ~(ry ^ imm);
-
-    state.r[p->reg1] = rx;
-
+    state.r[p->reg1] = ~(state.r[p->reg0_csr] ^ p->imm);
     state.pc += 4;
 
 #ifndef LM32_FAST_COMPILE
+    // Get any stall cycles on the instruction's input operands
+    state.cycle_count += calc_stall(p->reg0_csr, NULL_REG_IDX, state.cycle_count);
     rt[p->reg1] = state.cycle_count + p->decode->result_cycles;
     state.cycle_count += p->decode->issue_cycles;
 #endif
@@ -1235,21 +883,12 @@ void lm32_cpu::lm32_xnori (const p_lm32_decode_t p)
 
 void lm32_cpu::lm32_xor (const p_lm32_decode_t p)
 {
-#ifndef LM32_FAST_COMPILE
-    // Get any stall cycles on the instruction's input operands
-    state.cycle_count += calc_stall(p->reg0_csr, p->reg1, state.cycle_count);
-#endif
-
-    uint32_t ry = state.r[p->reg0_csr];
-    uint32_t rz = state.r[p->reg1];
-
-    uint32_t rx = ry ^ rz;
-
-    state.r[p->reg2] = rx;
-
+    state.r[p->reg2] =  state.r[p->reg0_csr] ^ state.r[p->reg1];
     state.pc += 4;
 
 #ifndef LM32_FAST_COMPILE
+    // Get any stall cycles on the instruction's input operands
+    state.cycle_count += calc_stall(p->reg0_csr, p->reg1, state.cycle_count);
     rt[p->reg2] = state.cycle_count + p->decode->result_cycles;
     state.cycle_count += p->decode->issue_cycles;
 #endif
@@ -1259,21 +898,12 @@ void lm32_cpu::lm32_xor (const p_lm32_decode_t p)
 
 void lm32_cpu::lm32_xori (const p_lm32_decode_t p)
 {
-#ifndef LM32_FAST_COMPILE
-    // Get any stall cycles on the instruction's input operands
-    state.cycle_count += calc_stall(p->reg0_csr, NULL_REG_IDX, state.cycle_count);
-#endif
-
-    uint32_t ry = state.r[p->reg0_csr];
-    uint32_t imm = p->imm;
-
-    uint32_t rx = ry ^ imm;
-
-    state.r[p->reg1] = rx;
-
+    state.r[p->reg1] = state.r[p->reg0_csr] ^ p->imm;
     state.pc += 4;
 
 #ifndef LM32_FAST_COMPILE
+    // Get any stall cycles on the instruction's input operands
+    state.cycle_count += calc_stall(p->reg0_csr, NULL_REG_IDX, state.cycle_count);
     rt[p->reg1] = state.cycle_count + p->decode->result_cycles;
     state.cycle_count += p->decode->issue_cycles;
 #endif
@@ -1303,161 +933,111 @@ void lm32_cpu::lm32_b (const p_lm32_decode_t p)
 
 void lm32_cpu::lm32_be (const p_lm32_decode_t p)
 {
-#ifndef LM32_FAST_COMPILE
-    // Get any stall cycles on the instruction's input operands
-    state.cycle_count += calc_stall(p->reg0_csr, p->reg1, state.cycle_count);
-#endif
-
-    uint32_t rx = state.r[p->reg0_csr];
-    uint32_t ry = state.r[p->reg1];
-    int32_t imm = SIGN_EXT18(p->imm << 2);
-
-    if (rx == ry)
+    if (state.r[p->reg0_csr] == state.r[p->reg1])
     {
-        state.pc = (uint32_t)((int32_t)state.pc + imm);
-#ifndef LM32_FAST_COMPILE
-        state.cycle_count += p->decode->issue_cycles;
-#endif
+        state.pc = (uint32_t)((int32_t)state.pc + SIGN_EXT18(p->imm << 2));
     }
     else
     {
         state.pc += 4;
-#ifndef LM32_FAST_COMPILE
-        state.cycle_count += p->decode->issue_not_takencycles;
-#endif
     }
+
+#ifndef LM32_FAST_COMPILE
+    // Get any stall cycles on the instruction's input operands
+    state.cycle_count += calc_stall(p->reg0_csr, p->reg1, state.cycle_count);
+    state.cycle_count += (state.r[p->reg0_csr] == state.r[p->reg1]) ? p->decode->issue_cycles : p->decode->issue_not_takencycles;
+#endif
 }
 
 // ------------------------------------------------------------
 
 void lm32_cpu::lm32_bg (const p_lm32_decode_t p)
 {
-#ifndef LM32_FAST_COMPILE
-    // Get any stall cycles on the instruction's input operands
-    state.cycle_count += calc_stall(p->reg0_csr, p->reg1, state.cycle_count);
-#endif
-
-    int32_t rx = (int32_t)state.r[p->reg0_csr];
-    int32_t ry = (int32_t)state.r[p->reg1];
-    int32_t imm = SIGN_EXT18(p->imm << 2);
-
-    if (rx > ry)
+    if ((int32_t)state.r[p->reg0_csr] > (int32_t)state.r[p->reg1])
     {
-        state.pc = (uint32_t)((int32_t)state.pc + imm);
-#ifndef LM32_FAST_COMPILE
-        state.cycle_count += p->decode->issue_cycles;
-#endif
+        state.pc = (uint32_t)((int32_t)state.pc + SIGN_EXT18(p->imm << 2));
     }
     else
     {
         state.pc += 4;
-#ifndef LM32_FAST_COMPILE
-        state.cycle_count += p->decode->issue_not_takencycles;
-#endif
     }
+
+#ifndef LM32_FAST_COMPILE
+    // Get any stall cycles on the instruction's input operands
+    state.cycle_count += calc_stall(p->reg0_csr, p->reg1, state.cycle_count);
+    state.cycle_count += ((int32_t)state.r[p->reg0_csr] > (int32_t)state.r[p->reg1]) ? p->decode->issue_cycles : p->decode->issue_not_takencycles;
+#endif
 }
 
 // ------------------------------------------------------------
 
 void lm32_cpu::lm32_bge (const p_lm32_decode_t p)
 {
-#ifndef LM32_FAST_COMPILE
-    // Get any stall cycles on the instruction's input operands
-    state.cycle_count += calc_stall(p->reg0_csr, p->reg1, state.cycle_count);
-#endif
-
-    int32_t rx = (int32_t)state.r[p->reg0_csr];
-    int32_t ry = (int32_t)state.r[p->reg1];
-    int32_t imm = SIGN_EXT18(p->imm << 2);
-
-    if (rx >= ry)
+    if ((int32_t)state.r[p->reg0_csr] >= (int32_t)state.r[p->reg1])
     {
-        state.pc = (uint32_t)((int32_t)state.pc + imm);
-#ifndef LM32_FAST_COMPILE
-        state.cycle_count += p->decode->issue_cycles;
-#endif
+        state.pc = (uint32_t)((int32_t)state.pc + SIGN_EXT18(p->imm << 2));
     }
     else
     {
         state.pc += 4;
-#ifndef LM32_FAST_COMPILE
-        state.cycle_count += p->decode->issue_not_takencycles;
-#endif
     }
+
+#ifndef LM32_FAST_COMPILE
+    // Get any stall cycles on the instruction's input operands
+    state.cycle_count += calc_stall(p->reg0_csr, p->reg1, state.cycle_count);
+    state.cycle_count += ((int32_t)state.r[p->reg0_csr] >= (int32_t)state.r[p->reg1]) ? p->decode->issue_cycles : p->decode->issue_not_takencycles;
+#endif
 }
 
 // ------------------------------------------------------------
 
 void lm32_cpu::lm32_bgeu (const p_lm32_decode_t p)
 {
-#ifndef LM32_FAST_COMPILE
-    // Get any stall cycles on the instruction's input operands
-    state.cycle_count += calc_stall(p->reg0_csr, p->reg1, state.cycle_count);
-#endif
-
-    uint32_t rx = state.r[p->reg0_csr];
-    uint32_t ry = state.r[p->reg1];
-    int32_t imm = SIGN_EXT18(p->imm << 2);
-
-    if (rx >= ry)
+    if (state.r[p->reg0_csr] >= state.r[p->reg1])
     {
-        state.pc = (uint32_t)((int32_t)state.pc + imm);
-#ifndef LM32_FAST_COMPILE
-        state.cycle_count += p->decode->issue_cycles;
-#endif
+        state.pc = (uint32_t)((int32_t)state.pc + SIGN_EXT18(p->imm << 2));
     }
     else
     {
         state.pc += 4;
-#ifndef LM32_FAST_COMPILE
-        state.cycle_count += p->decode->issue_not_takencycles;
-#endif
     }
+
+#ifndef LM32_FAST_COMPILE
+    // Get any stall cycles on the instruction's input operands
+    state.cycle_count += calc_stall(p->reg0_csr, p->reg1, state.cycle_count);
+    state.cycle_count += (state.r[p->reg0_csr] >= state.r[p->reg1]) ? p->decode->issue_cycles : p->decode->issue_not_takencycles;
+#endif
 }
 
 // ------------------------------------------------------------
 
 void lm32_cpu::lm32_bgu (const p_lm32_decode_t p)
 {
-#ifndef LM32_FAST_COMPILE
-    // Get any stall cycles on the instruction's input operands
-    state.cycle_count += calc_stall(p->reg0_csr, p->reg1, state.cycle_count);
-#endif
-
-    uint32_t rx = state.r[p->reg0_csr];
-    uint32_t ry = state.r[p->reg1];
-    int32_t imm = SIGN_EXT18(p->imm << 2);
-
-    if (rx > ry)
+    if (state.r[p->reg0_csr] > state.r[p->reg1])
     {
-        state.pc = (uint32_t)((int32_t)state.pc + imm);
-#ifndef LM32_FAST_COMPILE
-        state.cycle_count += p->decode->issue_cycles;
-#endif
+        state.pc = (uint32_t)((int32_t)state.pc + SIGN_EXT18(p->imm << 2));
     }
     else
     {
         state.pc += 4;
-#ifndef LM32_FAST_COMPILE
-        state.cycle_count += p->decode->issue_not_takencycles;
-#endif
     }
+
+#ifndef LM32_FAST_COMPILE
+    // Get any stall cycles on the instruction's input operands
+    state.cycle_count += calc_stall(p->reg0_csr, p->reg1, state.cycle_count);
+    state.cycle_count += (state.r[p->reg0_csr] > state.r[p->reg1]) ? p->decode->issue_cycles : p->decode->issue_not_takencycles;
+#endif
 }
 
 // ------------------------------------------------------------
 
 void lm32_cpu::lm32_bi (const p_lm32_decode_t p)
 {
+    state.pc = (uint32_t)((int32_t)state.pc + SIGN_EXT28(p->imm << 2));
+
 #ifndef LM32_FAST_COMPILE
     // Get any stall cycles on the instruction's input operands
     state.cycle_count += calc_stall(p->reg0_csr, p->reg1, state.cycle_count);
-#endif
-
-    int32_t imm = SIGN_EXT28(p->imm << 2);
-
-    state.pc = (uint32_t)((int32_t)state.pc + imm);
-
-#ifndef LM32_FAST_COMPILE
     state.cycle_count += p->decode->issue_cycles;
 #endif
 }
@@ -1466,47 +1046,32 @@ void lm32_cpu::lm32_bi (const p_lm32_decode_t p)
 
 void lm32_cpu::lm32_bne (const p_lm32_decode_t p)
 {
-#ifndef LM32_FAST_COMPILE
-    // Get any stall cycles on the instruction's input operands
-    state.cycle_count += calc_stall(p->reg0_csr, p->reg1, state.cycle_count);
-#endif
-
-    uint32_t ry = state.r[p->reg0_csr];
-    uint32_t rx = state.r[p->reg1];
-    int32_t imm = SIGN_EXT18(p->imm << 2);
-
-    if (rx != ry)
+    if (state.r[p->reg1] != state.r[p->reg0_csr])
     {
-        state.pc = (uint32_t)((int32_t)state.pc + imm);
-#ifndef LM32_FAST_COMPILE
-        state.cycle_count += p->decode->issue_cycles;
-#endif
+        state.pc = (uint32_t)((int32_t)state.pc + SIGN_EXT18(p->imm << 2));
     }
     else
     {
         state.pc += 4;
-#ifndef LM32_FAST_COMPILE
-        state.cycle_count += p->decode->issue_not_takencycles;
-#endif
     }
+
+#ifndef LM32_FAST_COMPILE
+    // Get any stall cycles on the instruction's input operands
+    state.cycle_count += calc_stall(p->reg0_csr, p->reg1, state.cycle_count);
+    state.cycle_count += (state.r[p->reg1] != state.r[p->reg0_csr]) ? p->decode->issue_cycles : p->decode->issue_not_takencycles;
+#endif
 }
 
 // ------------------------------------------------------------
 
 void lm32_cpu::lm32_call (const p_lm32_decode_t p)
 {
+    state.r[RA_REG_IDX] = state.pc + 4;
+    state.pc = state.r[p->reg0_csr];
+
 #ifndef LM32_FAST_COMPILE
     // Get any stall cycles on the instruction's input operands
     state.cycle_count += calc_stall(p->reg0_csr, NULL_REG_IDX, state.cycle_count);
-#endif
-
-    uint32_t rx = state.r[p->reg0_csr];
-
-    state.r[RA_REG_IDX] = state.pc + 4;
-
-    state.pc = rx;
-
-#ifndef LM32_FAST_COMPILE
     rt[RA_REG_IDX] = state.cycle_count + p->decode->result_cycles;
     state.cycle_count += p->decode->issue_cycles;
 #endif
@@ -1516,11 +1081,9 @@ void lm32_cpu::lm32_call (const p_lm32_decode_t p)
 
 void lm32_cpu::lm32_calli (const p_lm32_decode_t p)
 {
-    int32_t imm = SIGN_EXT28(p->imm << 2);
 
     state.r[RA_REG_IDX] = state.pc + 4;
-
-    state.pc = (uint32_t)((int32_t)state.pc + imm);
+    state.pc = (uint32_t)((int32_t)state.pc + SIGN_EXT28(p->imm << 2));
 
 #ifndef LM32_FAST_COMPILE
     rt[RA_REG_IDX] = state.cycle_count + p->decode->result_cycles;
@@ -1534,21 +1097,16 @@ void lm32_cpu::lm32_calli (const p_lm32_decode_t p)
 
 void lm32_cpu::lm32_lb (const p_lm32_decode_t p)
 {
-#ifndef LM32_FAST_COMPILE
-    // Get any stall cycles on the instruction's input operands
-    state.cycle_count += calc_stall(p->reg0_csr, NULL_REG_IDX, state.cycle_count);
+#ifndef LNXMICO32
+    state.r[p->reg1] = SIGN_EXT8(lm32_read_mem(state.r[p->reg0_csr]+SIGN_EXT16(p->imm), LM32_MEM_RD_ACCESS_BYTE));
+#else
+    state.r[p->reg1] = SIGN_EXT8(lm32_read_byte(state.r[p->reg0_csr] + SIGN_EXT16(p->imm)));
 #endif
-
-    uint32_t ry = state.r[p->reg0_csr];
-    int32_t imm = SIGN_EXT16(p->imm);
-
-    uint32_t rx = SIGN_EXT8(lm32_read_mem(ry+imm, LM32_MEM_RD_ACCESS_BYTE));
-
-    state.r[p->reg1] = rx;
-
     state.pc += 4;
 
 #ifndef LM32_FAST_COMPILE
+    // Get any stall cycles on the instruction's input operands
+    state.cycle_count += calc_stall(p->reg0_csr, NULL_REG_IDX, state.cycle_count);
     rt[p->reg1] = state.cycle_count + p->decode->result_cycles;
     state.cycle_count += p->decode->issue_cycles;
 #endif
@@ -1558,21 +1116,16 @@ void lm32_cpu::lm32_lb (const p_lm32_decode_t p)
 
 void lm32_cpu::lm32_lbu (const p_lm32_decode_t p)
 {
-#ifndef LM32_FAST_COMPILE
-    // Get any stall cycles on the instruction's input operands
-    state.cycle_count += calc_stall(p->reg0_csr, NULL_REG_IDX, state.cycle_count);
+#ifndef LNXMICO32
+    state.r[p->reg1] = lm32_read_mem(state.r[p->reg0_csr]+SIGN_EXT16(p->imm), LM32_MEM_RD_ACCESS_BYTE);
+#else
+    state.r[p->reg1] = lm32_read_byte(state.r[p->reg0_csr] + SIGN_EXT16(p->imm));
 #endif
-
-    uint32_t ry = state.r[p->reg0_csr];
-    int32_t imm = SIGN_EXT16(p->imm);
-
-    uint32_t rx = lm32_read_mem(ry+imm, LM32_MEM_RD_ACCESS_BYTE);
-
-    state.r[p->reg1] = rx;
-
     state.pc += 4;
 
 #ifndef LM32_FAST_COMPILE
+    // Get any stall cycles on the instruction's input operands
+    state.cycle_count += calc_stall(p->reg0_csr, NULL_REG_IDX, state.cycle_count);
     rt[p->reg1] = state.cycle_count + p->decode->result_cycles;
     state.cycle_count += p->decode->issue_cycles;
 #endif
@@ -1582,21 +1135,16 @@ void lm32_cpu::lm32_lbu (const p_lm32_decode_t p)
 
 void lm32_cpu::lm32_lh (const p_lm32_decode_t p)
 {
-#ifndef LM32_FAST_COMPILE
-    // Get any stall cycles on the instruction's input operands
-    state.cycle_count += calc_stall(p->reg0_csr, NULL_REG_IDX, state.cycle_count);
+#ifndef LNXMICO32
+    state.r[p->reg1] = SIGN_EXT16(lm32_read_mem(state.r[p->reg0_csr]+SIGN_EXT16(p->imm), LM32_MEM_RD_ACCESS_HWORD));
+#else
+    state.r[p->reg1] = SIGN_EXT16(lm32_read_hword(state.r[p->reg0_csr] + SIGN_EXT16(p->imm)));
 #endif
-
-    uint32_t ry = state.r[p->reg0_csr];
-    int32_t imm = SIGN_EXT16(p->imm);
-
-    uint32_t rx = SIGN_EXT16(lm32_read_mem(ry+imm, LM32_MEM_RD_ACCESS_HWORD));
-
-    state.r[p->reg1] = rx;
-
     state.pc += 4;
 
 #ifndef LM32_FAST_COMPILE
+    // Get any stall cycles on the instruction's input operands
+    state.cycle_count += calc_stall(p->reg0_csr, NULL_REG_IDX, state.cycle_count);
     rt[p->reg1] = state.cycle_count + p->decode->result_cycles;
     state.cycle_count += p->decode->issue_cycles;
 #endif
@@ -1606,21 +1154,16 @@ void lm32_cpu::lm32_lh (const p_lm32_decode_t p)
 
 void lm32_cpu::lm32_lhu (const p_lm32_decode_t p)
 {
-#ifndef LM32_FAST_COMPILE
-    // Get any stall cycles on the instruction's input operands
-    state.cycle_count += calc_stall(p->reg0_csr, NULL_REG_IDX, state.cycle_count);
+#ifndef LNXMICO32
+    state.r[p->reg1] = lm32_read_mem(state.r[p->reg0_csr]+SIGN_EXT16(p->imm), LM32_MEM_RD_ACCESS_HWORD);
+#else
+    state.r[p->reg1] = lm32_read_hword(state.r[p->reg0_csr] + SIGN_EXT16(p->imm));
 #endif
-
-    uint32_t ry = state.r[p->reg0_csr];
-    int32_t imm = SIGN_EXT16(p->imm);
-
-    uint32_t rx = lm32_read_mem(ry+imm, LM32_MEM_RD_ACCESS_HWORD);
-
-    state.r[p->reg1] = rx;
-
     state.pc += 4;
 
 #ifndef LM32_FAST_COMPILE
+    // Get any stall cycles on the instruction's input operands
+    state.cycle_count += calc_stall(p->reg0_csr, NULL_REG_IDX, state.cycle_count);
     rt[p->reg1] = state.cycle_count + p->decode->result_cycles;
     state.cycle_count += p->decode->issue_cycles;
 #endif
@@ -1630,21 +1173,16 @@ void lm32_cpu::lm32_lhu (const p_lm32_decode_t p)
 
 void lm32_cpu::lm32_lw (const p_lm32_decode_t p)
 {
-#ifndef LM32_FAST_COMPILE
-    // Get any stall cycles on the instruction's input operands
-    state.cycle_count += calc_stall(p->reg0_csr, NULL_REG_IDX, state.cycle_count);
+#ifndef LNXMICO32
+    state.r[p->reg1] = lm32_read_mem(state.r[p->reg0_csr]+SIGN_EXT16(p->imm), LM32_MEM_RD_ACCESS_WORD);
+#else
+    state.r[p->reg1] = lm32_read_word(state.r[p->reg0_csr] + SIGN_EXT16(p->imm));
 #endif
-
-    uint32_t ry = state.r[p->reg0_csr];
-    int32_t imm = SIGN_EXT16(p->imm);
-
-    uint32_t rx = lm32_read_mem(ry+imm, LM32_MEM_RD_ACCESS_WORD);
-
-    state.r[p->reg1] = rx;
-
     state.pc += 4;
 
 #ifndef LM32_FAST_COMPILE
+    // Get any stall cycles on the instruction's input operands
+    state.cycle_count += calc_stall(p->reg0_csr, NULL_REG_IDX, state.cycle_count);
     rt[p->reg1] = state.cycle_count + p->decode->result_cycles;
     state.cycle_count += p->decode->issue_cycles;
 #endif
@@ -1654,21 +1192,16 @@ void lm32_cpu::lm32_lw (const p_lm32_decode_t p)
 
 void lm32_cpu::lm32_sb (const p_lm32_decode_t p)
 {
-#ifndef LM32_FAST_COMPILE
-    // Get any stall cycles on the instruction's input operands
-    state.cycle_count += calc_stall(p->reg0_csr, NULL_REG_IDX, state.cycle_count);
+#ifndef LNXMICO32
+    lm32_write_mem(state.r[p->reg0_csr]+SIGN_EXT16(p->imm), state.r[p->reg1] & BYTE_MASK, LM32_MEM_WR_ACCESS_BYTE);
+#else
+    lm32_write_byte(state.r[p->reg0_csr] + SIGN_EXT16(p->imm), state.r[p->reg1] & BYTE_MASK);
 #endif
-
-    uint32_t rx = state.r[p->reg0_csr];
-    int32_t imm = SIGN_EXT16(p->imm);
-
-    uint32_t ry = state.r[p->reg1] & BYTE_MASK;
-
-    lm32_write_mem(rx+imm, ry, LM32_MEM_WR_ACCESS_BYTE);
-
     state.pc += 4;
 
 #ifndef LM32_FAST_COMPILE
+    // Get any stall cycles on the instruction's input operands
+    state.cycle_count += calc_stall(p->reg0_csr, NULL_REG_IDX, state.cycle_count);
     state.cycle_count += p->decode->issue_cycles;
 #endif
 }
@@ -1677,21 +1210,16 @@ void lm32_cpu::lm32_sb (const p_lm32_decode_t p)
 
 void lm32_cpu::lm32_sh (const p_lm32_decode_t p)
 {
-#ifndef LM32_FAST_COMPILE
-    // Get any stall cycles on the instruction's input operands
-    state.cycle_count += calc_stall(p->reg0_csr, NULL_REG_IDX, state.cycle_count);
+#ifndef LNXMICO32
+    lm32_write_mem(state.r[p->reg0_csr]+SIGN_EXT16(p->imm), state.r[p->reg1] & HWORD_MASK, LM32_MEM_WR_ACCESS_HWORD);
+#else
+    lm32_write_hword(state.r[p->reg0_csr] + SIGN_EXT16(p->imm), state.r[p->reg1] & HWORD_MASK);
 #endif
-
-    uint32_t rx = state.r[p->reg0_csr];
-    int32_t imm = SIGN_EXT16(p->imm);
-
-    uint32_t ry = state.r[p->reg1] & HWORD_MASK;
-
-    lm32_write_mem(rx+imm, ry, LM32_MEM_WR_ACCESS_HWORD);
-
     state.pc += 4;
 
 #ifndef LM32_FAST_COMPILE
+    // Get any stall cycles on the instruction's input operands
+    state.cycle_count += calc_stall(p->reg0_csr, NULL_REG_IDX, state.cycle_count);
     state.cycle_count += p->decode->issue_cycles;
 #endif
 }
@@ -1700,21 +1228,16 @@ void lm32_cpu::lm32_sh (const p_lm32_decode_t p)
 
 void lm32_cpu::lm32_sw (const p_lm32_decode_t p)
 {
-#ifndef LM32_FAST_COMPILE
-    // Get any stall cycles on the instruction's input operands
-    state.cycle_count += calc_stall(p->reg0_csr, NULL_REG_IDX, state.cycle_count);
+#ifndef LNXMICO32
+    lm32_write_mem(state.r[p->reg0_csr]+SIGN_EXT16(p->imm), state.r[p->reg1], LM32_MEM_WR_ACCESS_WORD);
+#else
+    lm32_write_word(state.r[p->reg0_csr] + SIGN_EXT16(p->imm), state.r[p->reg1]);
 #endif
-
-    uint32_t rx = state.r[p->reg0_csr];
-    int32_t imm = SIGN_EXT16(p->imm);
-
-    uint32_t ry = state.r[p->reg1];
-
-    lm32_write_mem(rx+imm, ry, LM32_MEM_WR_ACCESS_WORD);
-
     state.pc += 4;
 
 #ifndef LM32_FAST_COMPILE
+    // Get any stall cycles on the instruction's input operands
+    state.cycle_count += calc_stall(p->reg0_csr, NULL_REG_IDX, state.cycle_count);
     state.cycle_count += p->decode->issue_cycles;
 #endif
 }

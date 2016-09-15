@@ -50,7 +50,7 @@
       <WarningLevel>Level3</WarningLevel>
       <Optimization>Disabled</Optimization>
       <PreprocessorDefinitions>WIN32;_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <AdditionalOptions>/D_CRT_SECURE_NO_WARNINGS /DLNXMICO32  /DLM32_FAST_COMPILE %(AdditionalOptions)</AdditionalOptions>
+      <AdditionalOptions>/D_CRT_SECURE_NO_WARNINGS /DLNXMICO32 /DLM32_FAST_COMPILE %(AdditionalOptions)</AdditionalOptions>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -85,6 +85,7 @@
     <ClCompile Include="..\..\src\getopt.c" />
     <ClCompile Include="..\..\src\lm32_cache.cpp" />
     <ClCompile Include="..\..\src\lm32_cpu.cpp" />
+    <ClCompile Include="..\..\src\lm32_cpu_disassembler.cpp" />
     <ClCompile Include="..\..\src\lm32_cpu_inst.cpp" />
     <ClCompile Include="..\..\src\lm32_get_config.cpp" />
     <ClCompile Include="..\..\src\lnxmico32.cpp" />

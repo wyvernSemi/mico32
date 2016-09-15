@@ -22,7 +22,7 @@
 // You should have received a copy of the GNU General Public License
 // along with cpumico32. If not, see <http://www.gnu.org/licenses/>.
 //
-// $Id: lm32_cpu.cpp,v 2.10 2016-09-06 15:24:04 simon Exp $
+// $Id: lm32_cpu.cpp,v 3.3 2016-09-15 18:14:04 simon Exp $
 // $Source: /home/simon/CVS/src/cpu/mico32/src/lm32_cpu.cpp,v $
 //
 //=============================================================
@@ -887,7 +887,7 @@ bool lm32_cpu::process_exceptions()
         }
     }
 
-    // If external interrupts enabled, and anyone is interrupting, call the interrupt function
+    // If interrupts enabled, and anyone is interrupting, call the interrupt function
     if ((state.ie & IE_IE_MASK) && state.int_flags)
     {
         // Find the highest priority interrupt
@@ -919,70 +919,6 @@ bool lm32_cpu::process_exceptions()
 void lm32_cpu::lm32_reset_cpu()
 {
     state.int_flags |= 1 << INT_ID_RESET;
-}
-
-// -------------------------------------------------------------------------
-// lm32_dump_registers()
-// 
-// Dump the registers to the specified output stream
-// 
-// -------------------------------------------------------------------------
-
-void lm32_cpu::lm32_dump_registers()
-{
-    int idx;
-
-    fprintf(ofp, "\n");
-    for(idx = 0; idx < LM32_NUM_OF_REGISTERS-6; idx++)
-    {
-        fprintf(ofp, "r%02d = 0x%08x  ", idx, state.r[idx]);
-
-        if ((idx % 4) == 3)
-        {
-            fprintf(ofp, "\n");
-        }
-    }
-
-    fprintf(ofp, "gp  = 0x%08x  ",  state.r[idx++]);
-    fprintf(ofp, "fp  = 0x%08x  ",  state.r[idx++]);
-
-    fprintf(ofp, "\n");
-    fprintf(ofp, "sp  = 0x%08x  ",  state.r[idx++]);
-    fprintf(ofp, "ra  = 0x%08x  ",  state.r[idx++]);
-    fprintf(ofp, "ea  = 0x%08x  ",  state.r[idx++]);
-    fprintf(ofp, "ba  = 0x%08x\n",  state.r[idx++]);
-
-    fprintf(ofp, "\n");
-    fprintf(ofp, "pc  = 0x%08x  ",  state.pc);
-    fprintf(ofp, "ie  = 0x%08x  ",  state.ie);
-    fprintf(ofp, "ip  = 0x%08x  ",  state.ip);
-    fprintf(ofp, "im  = 0x%08x\n",  state.im);
-
-    fprintf(ofp, "icc = 0x%08x  ",  state.icc);
-    fprintf(ofp, "dcc = 0x%08x  ",  state.dcc);
-    fprintf(ofp, "cfg = 0x%08x ",   state.cfg);
-    fprintf(ofp, "cfg2 = 0x%08x\n", state.cfg2);
-
-    fprintf(ofp, "cc  = 0x%08x  ",  (uint32_t)((state.cycle_count + cc_adjust) & 0xffffffffULL));
-    fprintf(ofp, "eba = 0x%08x ",   state.eba);
-
-    fprintf(ofp, "\n");
-
-    fprintf(ofp, "\n");
-    fprintf(ofp, "bp0 = 0x%08x  ",  state.bp0);
-    fprintf(ofp, "bp1 = 0x%08x  ",  state.bp1);
-    fprintf(ofp, "bp2 = 0x%08x  ",  state.bp2);
-    fprintf(ofp, "bp3 = 0x%08x\n",  state.bp3);
-
-    fprintf(ofp, "wp0 = 0x%08x  ",  state.wp0);
-    fprintf(ofp, "wp1 = 0x%08x  ",  state.wp1);
-    fprintf(ofp, "wp2 = 0x%08x  ",  state.wp2);
-    fprintf(ofp, "wp3 = 0x%08x\n",  state.wp3);
-
-    fprintf(ofp, "dc  = 0x%08x ",  state.dc);
-    fprintf(ofp, "deba = 0x%08x ",  state.deba);
-
-    fprintf(ofp, "\n");
 }
 
 // -------------------------------------------------------------------------
@@ -1020,8 +956,12 @@ bool lm32_cpu::execute_instruction (p_lm32_decode_t d)
     }
 #endif
 
+#ifndef LNXMICO32
     // Fetch the next instruction opcode
     d->opcode = lm32_read_mem(state.pc, LM32_MEM_RD_INSTR);
+#else
+    d->opcode = lm32_read_instr(state.pc);
+#endif
 
     // Calculate the index into the decode tables from the opcode
     int table_index = d->opcode >> OPCODE_START_BIT;

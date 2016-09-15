@@ -23,7 +23,7 @@
 // You should have received a copy of the GNU General Public License
 // along with cpumico32. If not, see <http://www.gnu.org/licenses/>.
 //
-// $Id: cpumico32.cpp,v 2.9 2016-09-03 07:44:11 simon Exp $
+// $Id: cpumico32.cpp,v 3.1 2016-09-14 08:50:47 simon Exp $
 // $Source: /home/simon/CVS/src/cpu/mico32/src/cpumico32.cpp,v $
 //
 //=============================================================
@@ -144,6 +144,10 @@ int main (int argc, char** argv)
 
     // Set the verbosity level
     cpu->lm32_set_verbosity_level(p_cfg->verbose);
+
+    // By convention, r0 is always 0. Use lm32_set_gp_reg() to ensure this
+    // for coverage.
+    cpu->lm32_set_gp_reg(0, 0);
 
     // If test mode enabled, register the callacks here, and do some
     // quick external access checks

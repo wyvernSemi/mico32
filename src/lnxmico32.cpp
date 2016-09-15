@@ -21,7 +21,7 @@
 // You should have received a copy of the GNU General Public License
 // along with lnxmico32. If not, see <http://www.gnu.org/licenses/>.
 //
-// $Id: lnxmico32.cpp,v 2.7 2016-09-06 06:06:40 simon Exp $
+// $Id: lnxmico32.cpp,v 3.1 2016-09-15 06:59:07 simon Exp $
 // $Source: /home/simon/CVS/src/cpu/mico32/src/lnxmico32.cpp,v $
 //
 //=============================================================
@@ -42,11 +42,13 @@
 #include <unistd.h>
 #endif
 #include <termios.h>
+#include <sys/time.h>
 #else 
 extern "C" {
 extern int getopt(int nargc, char** nargv, char* ostr);
 extern char* optarg;
 }
+#include <Windows.h>
 #endif
 
 #include "lm32_cpu.h"
@@ -175,11 +177,19 @@ static const uint8_t trail_config[LM32_TRL_CONFIG_LEN] = {
     0, 0, 0, LM32_HW_TAG_EOL
 };
 
+static double tv_diff;
+#if !(defined _WIN32) && !(defined _WIN64)
+static struct timeval tv_start, tv_stop;
+
+#else
+LARGE_INTEGER freq, start, stop;
+#endif
+
 // -------------------------------------------------------------------------
 // Terminal control utility functions for enabling/diabling input echoing
 // -------------------------------------------------------------------------
 
-void echo_off()
+static void pre_run_setup()
 {
 #if !(defined _WIN32) && !(defined _WIN64)
     // For non-windows systems, turn off echoing of input key presses
@@ -188,10 +198,17 @@ void echo_off()
     tcgetattr(STDIN_FILENO, &t);
     t.c_lflag &= ~ECHO;
     tcsetattr(STDIN_FILENO, TCSANOW, &t);
+
+    // Log time just before running (LINUX only)
+    (void)gettimeofday(&tv_start, NULL);
+#else
+    
+    QueryPerformanceFrequency(&freq);
+    QueryPerformanceCounter(&start);
 #endif 
 }
 
-void echo_on()
+static void post_run_setup()
 {
 #if !(defined _WIN32) && !(defined _WIN64)
     // For non-windows systems, turn off echoing of input key presses
@@ -200,6 +217,13 @@ void echo_on()
     tcgetattr(STDIN_FILENO, &t);
     t.c_lflag |= ECHO;
     tcsetattr(STDIN_FILENO, TCSANOW, &t);
+
+    // Get time just after running, and calculate run time (LINUX only)
+    (void)gettimeofday(&tv_stop, NULL);
+    tv_diff = ((float)(tv_stop.tv_sec - tv_start.tv_sec)*1e6) + ((float)(tv_stop.tv_usec - tv_start.tv_usec));
+#else
+    QueryPerformanceCounter(&stop);
+    tv_diff = (double)(stop.QuadPart - start.QuadPart)*1e6/(double)freq.QuadPart;
 #endif 
 }
 
@@ -212,7 +236,7 @@ void echo_on()
 //
 // -------------------------------------------------------------------------
 
-void load_system_state()
+static void load_system_state()
 {
     FILE* sfp;
 
@@ -286,7 +310,7 @@ void load_system_state()
 //
 // -------------------------------------------------------------------------
 
-void save_system_state()
+static void save_system_state()
 {
     // Save updated memory
     FILE* sfp;
@@ -361,7 +385,7 @@ void save_system_state()
 //
 // -------------------------------------------------------------------------
 
-int ext_mem_access (const uint32_t byte_addr, uint32_t *data, const int type, const int cache_hit, const lm32_time_t time)
+static int ext_mem_access (const uint32_t byte_addr, uint32_t *data, const int type, const int cache_hit, const lm32_time_t time)
 {
     // By default, memory access is not intercepted
     int processing_time  = LM32_EXT_MEM_NOT_PROCESSED;
@@ -413,7 +437,7 @@ int ext_mem_access (const uint32_t byte_addr, uint32_t *data, const int type, co
 //
 // -------------------------------------------------------------------------
 
-uint32_t ext_interrupt (const lm32_time_t time, lm32_time_t *wakeup_time)
+static uint32_t ext_interrupt (const lm32_time_t time, lm32_time_t *wakeup_time)
 {
     uint32_t rtn_interrupt = 0;
     bool terminate = false;
@@ -636,7 +660,7 @@ int main (int argc, char** argv)
     }
 
     // Turn off key input echoing, as the running OS software will do this
-    echo_off();
+    pre_run_setup();
 
     // Run the CPU. Re-enter if the returned status was for a watch- or breakpoint or single stepping,
     // as this is a test program exit.
@@ -650,7 +674,7 @@ int main (int argc, char** argv)
              rtn_status == LM32_RESET_BREAK);
 
     // Turn key input echoing back on
-    echo_on();
+    post_run_setup();
 
     // Dump registers after completion, if specified to do so
     if (p_cfg->dump_registers)
@@ -663,8 +687,8 @@ int main (int argc, char** argv)
     {
         uint64_t instr_count = cpu->lm32_get_num_instructions();
 
-        fprintf(lfp, "\nNumber of executed instructions = %.1f million\n",  
-	              (float)instr_count/1e6);
+        fprintf(lfp, "\nNumber of executed instructions = %.1f million (%.1f MIPS)\n",  
+	              (float)instr_count/1e6, (float)instr_count/tv_diff);
     }
 
     // Dump RAM, if specified to do so and within range

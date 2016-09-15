@@ -21,7 +21,7 @@
 // You should have received a copy of the GNU General Public License
 // along with lnxmico32. If not, see <http://www.gnu.org/licenses/>.
 //
-// $Id: lnxtimer.cpp,v 2.4 2016-09-03 07:44:09 simon Exp $
+// $Id: lnxtimer.cpp,v 3.0 2016-09-07 13:15:38 simon Exp $
 // $Source: /home/simon/CVS/src/cpu/mico32/src/lnxtimer.cpp,v $
 //
 //=============================================================

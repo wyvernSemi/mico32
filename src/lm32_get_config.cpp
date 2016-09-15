@@ -22,7 +22,7 @@
 // You should have received a copy of the GNU General Public License
 // along with cpumico32. If not, see <http://www.gnu.org/licenses/>.
 //
-// $Id: lm32_get_config.cpp,v 2.8 2016-09-06 06:11:26 simon Exp $
+// $Id: lm32_get_config.cpp,v 3.1 2016-09-15 18:11:36 simon Exp $
 // $Source: /home/simon/CVS/src/cpu/mico32/src/lm32_get_config.cpp,v $
 //
 //=============================================================
@@ -59,7 +59,7 @@ extern int optind;
 #  ifdef LM32_FAST_COMPILE
 #   define LM32_GETOPT_ARG_STR "l:r:R:DIc:i:s:SL"
 #  else
-    define LM32_GETOPT_ARG_STR "l:n:vxb:dr:R:DIc:w:i:V:s:SL"
+#   define LM32_GETOPT_ARG_STR "l:n:vxb:dr:R:DIc:w:i:V:s:SL"
 #  endif
 # else
 #  ifdef LM32_FAST_COMPILE

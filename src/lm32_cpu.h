@@ -22,7 +22,7 @@
 // You should have received a copy of the GNU General Public License
 // along with cpumico32. If not, see <http://www.gnu.org/licenses/>.
 //
-// $Id: lm32_cpu.h,v 2.8 2016-09-06 06:13:47 simon Exp $
+// $Id: lm32_cpu.h,v 3.2 2016-09-15 18:13:09 simon Exp $
 // $Source: /home/simon/CVS/src/cpu/mico32/src/lm32_cpu.h,v $
 //
 //=============================================================
@@ -150,6 +150,50 @@ public:
     // External direct memory access
     LIBMICO32_API uint32_t    lm32_read_mem                  (const uint32_t byte_addr, const int type);
     LIBMICO32_API void        lm32_write_mem                 (const uint32_t byte_addr, const uint32_t data, const int type, const bool disable_cycle_count=false);
+
+#ifdef LNXMICO32
+
+#include "lnxmico32.h"
+
+    LIBMICO32_API inline uint32_t lm32_read_word             (const uint32_t byte_addr) {
+        return (byte_addr & LM32_PERIPH_MASK) ? lm32_read_mem(byte_addr, LM32_MEM_RD_ACCESS_WORD) : 
+                                                SWAP(mem32[(byte_addr & LM32_RAM_MASK)>>2]);
+    };
+
+    LIBMICO32_API inline uint32_t lm32_read_instr            (const uint32_t byte_addr) { return SWAP(mem32[(byte_addr & LM32_RAM_MASK)>>2]);};
+
+    LIBMICO32_API inline void     lm32_write_word            (const uint32_t byte_addr, const uint32_t data) {
+        if (byte_addr & LM32_PERIPH_MASK) 
+            lm32_write_mem(byte_addr, data, LM32_MEM_WR_ACCESS_WORD);
+        else
+            mem32[(byte_addr & LM32_RAM_MASK)>>2] = SWAP(data); 
+    };
+
+    LIBMICO32_API inline uint32_t lm32_read_hword            (const uint32_t byte_addr) {
+        return (byte_addr & LM32_PERIPH_MASK) ? lm32_read_mem(byte_addr, LM32_MEM_RD_ACCESS_HWORD) : 
+                                                SWAPHALF(mem16[(byte_addr & LM32_RAM_MASK)>>1]);
+    };
+
+    LIBMICO32_API inline void     lm32_write_hword           (const uint32_t byte_addr, const uint32_t data) {
+        if (byte_addr & LM32_PERIPH_MASK) 
+            lm32_write_mem(byte_addr, data, LM32_MEM_WR_ACCESS_HWORD);
+        else
+            mem16[(byte_addr & LM32_RAM_MASK)>>1] = SWAPHALF(data); 
+    };
+
+    LIBMICO32_API inline uint32_t lm32_read_byte             (const uint32_t byte_addr) {
+        return (byte_addr & LM32_PERIPH_MASK) ? lm32_read_mem(byte_addr, LM32_MEM_RD_ACCESS_BYTE) : 
+                                                mem[byte_addr & LM32_RAM_MASK];
+    };
+
+    LIBMICO32_API inline void     lm32_write_byte            (const uint32_t byte_addr, const uint32_t data) {
+        if (byte_addr & LM32_PERIPH_MASK)  
+            lm32_write_mem(byte_addr, data, LM32_MEM_WR_ACCESS_BYTE);
+        else
+            mem[byte_addr & LM32_RAM_MASK] = data; 
+    };
+
+#endif
 
     // Internal register access
     LIBMICO32_API void        lm32_set_gp_reg                (const unsigned index, const uint32_t val);
