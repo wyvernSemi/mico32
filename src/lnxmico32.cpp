@@ -21,7 +21,7 @@
 // You should have received a copy of the GNU General Public License
 // along with lnxmico32. If not, see <http://www.gnu.org/licenses/>.
 //
-// $Id: lnxmico32.cpp,v 3.1 2016-09-15 06:59:07 simon Exp $
+// $Id: lnxmico32.cpp,v 3.2 2016-09-16 08:29:35 simon Exp $
 // $Source: /home/simon/CVS/src/cpu/mico32/src/lnxmico32.cpp,v $
 //
 //=============================================================
@@ -662,16 +662,8 @@ int main (int argc, char** argv)
     // Turn off key input echoing, as the running OS software will do this
     pre_run_setup();
 
-    // Run the CPU. Re-enter if the returned status was for a watch- or breakpoint or single stepping,
-    // as this is a test program exit.
-    int rtn_status = LM32_RESET_BREAK;
-    do 
-    {
-        rtn_status = cpu->lm32_run_program(NULL, p_cfg->num_run_instructions, p_cfg->user_break_addr, LM32_RUN_FROM_RESET, false);
-
-    } while (rtn_status == LM32_HW_BREAKPOINT_BREAK || rtn_status == LM32_HW_WATCHPOINT_BREAK ||
-             rtn_status == LM32_SINGLE_STEP_BREAK   || rtn_status == LM32_TICK_BREAK ||
-             rtn_status == LM32_RESET_BREAK);
+    // Run the CPU.
+    (void)cpu->lm32_run_program(NULL, p_cfg->num_run_instructions, p_cfg->user_break_addr, LM32_RUN_FROM_RESET, false);
 
     // Turn key input echoing back on
     post_run_setup();
