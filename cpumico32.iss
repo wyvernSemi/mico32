@@ -14,9 +14,6 @@ Name: "{app}\obj_lnx"
 ; This inno file
 Source: "cpumico32.iss";                               DestDir: "{app}"
 
-; GPL
-Source: "LICENCE.txt";                                 DestDir: "{app}"
-
 ; Linux/cygwin make files
 Source: "makefile";                                    DestDir: "{app}"
 Source: "makefile.lnx";                                DestDir: "{app}"
