@@ -22,7 +22,7 @@
 // You should have received a copy of the GNU General Public License
 // along with cpumico32. If not, see <http://www.gnu.org/licenses/>.
 //
-// $Id: lm32_get_config.cpp,v 3.1 2016-09-15 18:11:36 simon Exp $
+// $Id: lm32_get_config.cpp,v 3.2 2016-09-20 09:31:29 simon Exp $
 // $Source: /home/simon/CVS/src/cpu/mico32/src/lm32_get_config.cpp,v $
 //
 //=============================================================
@@ -519,7 +519,8 @@ extern "C" lm32_config_t* lm32_get_config(int argc, char** argv, const char* def
                 LM32_CFG_INI_PARAM_WARNING;
             }
         }
-#else
+#endif
+#ifdef LNXMICO32
         else if (!strcmp(cfg_entries[cdx].section, (char*)"state"))
         {
             if (!strcmp(cfg_entries[cdx].entry, (char*)"save_file_name"))

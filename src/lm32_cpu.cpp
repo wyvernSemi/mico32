@@ -22,7 +22,7 @@
 // You should have received a copy of the GNU General Public License
 // along with cpumico32. If not, see <http://www.gnu.org/licenses/>.
 //
-// $Id: lm32_cpu.cpp,v 3.4 2016-09-15 19:24:55 simon Exp $
+// $Id: lm32_cpu.cpp,v 3.5 2016-09-20 09:32:35 simon Exp $
 // $Source: /home/simon/CVS/src/cpu/mico32/src/lm32_cpu.cpp,v $
 //
 //=============================================================
@@ -431,8 +431,6 @@ uint32_t lm32_cpu::lm32_read_mem (const uint32_t byte_addr_raw, const int type)
         }
     }
 
-    // By default do a local memory access
-    bool do_local_access = true;
 #else
     // This fast calculation requires num_mem_bytes to be a power of 2
     uint32_t byte_addr = byte_addr_raw & num_mem_bytes_mask;
@@ -450,26 +448,25 @@ uint32_t lm32_cpu::lm32_read_mem (const uint32_t byte_addr_raw, const int type)
         // Execute callback function
         mem_callback_delay = pMemCallback(byte_addr_raw, &data, type, cache_hit, state.cycle_count);
 
+        // TODO: lnxmico32 hangs after boot if state.cycle_count incremented by any amount on callback read.
+        // (Seems okay for writes.) Don't yet know why.
+#if !defined(LNXMICO32) && !defined(LM32_FAST_CCOMPILE)
         // Advance time by the returned amount, if intercepted, and flag no local access
         if (mem_callback_delay != LM32_EXT_MEM_NOT_PROCESSED)
         {
-
-#ifndef LM32_FAST_COMPILE
-            do_local_access = false;
-
             // Cycle count is incremented by returned amount when not cached, or returned amount scaled for
             // the number of words to update a cache line if cached and a miss. When a cache hit, no wait
             // states are added
             state.cycle_count += (!cache_hit) ? (lm32_time_t)mem_callback_delay * (cache_access ? cache_words_per_line : 1) : 0;
-#endif
         }
+#endif
     }
 #ifdef LM32_FAST_COMPILE
     else
     {
 #else
     // If not a callback access, do local memory access
-    if (do_local_access)
+    if (mem_callback_delay == LM32_EXT_MEM_NOT_PROCESSED)
     {
 
         // Cycle count is incremented by memory wait states when not cached, or wait states scaled for
