@@ -21,7 +21,7 @@
 // You should have received a copy of the GNU General Public License
 // along with lnxmico32. If not, see <http://www.gnu.org/licenses/>.
 //
-// $Id: lnxuart.cpp,v 3.0 2016-09-07 13:15:39 simon Exp $
+// $Id: lnxuart.cpp,v 3.1 2016-09-22 08:52:40 simon Exp $
 // $Source: /home/simon/CVS/src/cpu/mico32/src/lnxuart.cpp,v $
 //
 //=============================================================
@@ -89,6 +89,11 @@
 #else
 #define LM32_NEWLINE_CHAR      0x0a
 #endif
+
+// Hide input function specifics for ease of future updating
+#define LM32_OUTPUT_TTY(_x) putchar(_x)
+#define LM32_INPUT_RDY_TTY _kbhit
+#define LM32_GET_INPUT_TTY _getch
 
 // -------------------------------------------------------------------------
 // LOCAL CONSTANTS
@@ -162,7 +167,7 @@ void lm32_uart_write(const uint32_t address, const uint32_t data, const int cntx
     {
     case LM32_UART_RBR_REG:
         // Print the character
-        putchar(data & LM32_UART_RBR_WR_MASK);
+        LM32_OUTPUT_TTY(data & LM32_UART_RBR_WR_MASK);
 
 #ifdef CYGWIN
         // Flush the output. When compiling with optimisations under Cygwin, not all
@@ -257,13 +262,13 @@ bool lm32_uart_tick(const lm32_time_t time, bool &terminate, const bool kbd_conn
 
     // When UART with keyboard connected, and input is waiting, get the value and put in RBR register,
     // then flag data ready status
-    if (kbd_connected && _kbhit())
+    if (kbd_connected && LM32_INPUT_RDY_TTY())
     {
         // Since only one UART can be the input, only need one terminate index state
         static int term_idx = 0;
 
         // Get the input character and put in the RBR register
-        uint32_t  cur = _getch() & 0xffU;
+        uint32_t  cur = LM32_GET_INPUT_TTY() & 0xffU;
         uart_state.lm32_uart_regs[cntx][LM32_UART_RBR_REG >> 2] = cur;
 
         // Set the data received flag in the LSR register
