@@ -21,7 +21,7 @@
 # You should have received a copy of the GNU General Public License
 # along with lnxmico32. If not, see <http://www.gnu.org/licenses/>.
 #
-# $Id: makefile.lnx,v 3.2 2016-09-15 18:10:39 simon Exp $
+# $Id: makefile.lnx,v 3.3 2016/10/19 13:33:22 simon Exp $
 # $Source: /home/simon/CVS/src/cpu/mico32/makefile.lnx,v $
 # 
 ##########################################################
@@ -63,14 +63,20 @@ OSTYPE:=$(shell uname -o)
 CC=g++
 CC_C=gcc
 
+# Architecture options for external setting (e.g -m32 or -m64)
+ARCHOPTS=
+
+# Local options specific to lnxmic32 project
+LOCALOPTS=-DLM32_FAST_COMPILE
+
 # GCC in CYGWIN gives tedious warnings that all code is relocatable, and 
 # so -fPIC not required. So shut it up.
 ifeq (${OSTYPE}, Cygwin)
   #COPTS=-g -DLNXMICO32
-  COPTS=-Ofast -fomit-frame-pointer -march=native -DLNXMICO32 -DLM32_FAST_COMPILE
+  COPTS=-Ofast -fomit-frame-pointer -march=native -DLNXMICO32 ${LOCALOPTS}
 else
   #COPTS=-g -fPIC -DLNXMICO32
-  COPTS= -fPIC -Ofast -fomit-frame-pointer -march=native -DLNXMICO32 -DLM32_FAST_COMPILE
+  COPTS= -fPIC -Ofast -fomit-frame-pointer -march=native -DLNXMICO32 ${LOCALOPTS}
 endif
 
 COVOPTS=
@@ -100,7 +106,7 @@ ${OBJDIR}/lnxtimer.o              : ${SRCDIR}/lm32_cpu.h ${SRCDIR}/lm32_cpu_hdr.
 ##########################################################
 
 ${TARGET} : ${OBJECTS:%=${OBJDIR}/%} ${LIBTARGET} ${LIBSOTARGET}
-	@$(CC) ${OBJECTS:%=${OBJDIR}/%} ${LIBTARGET} ${ARCHOPT} ${COVOPTS} ${LDOPTS} -o ${TARGET}
+	@$(CC) ${OBJECTS:%=${OBJDIR}/%} ${LIBTARGET} ${ARCHOPTS} ${COVOPTS} ${LDOPTS} -o ${TARGET}
 
 ${LIBTARGET}: ${LIBOBJS:%=${OBJDIR}/%}
 	@rm -f ${LIBTARGET}
@@ -108,13 +114,13 @@ ${LIBTARGET}: ${LIBOBJS:%=${OBJDIR}/%}
 
 ${LIBSOTARGET}: ${LIBOBJS:%=${OBJDIR}/%}
 	@rm -f ${LIBSOTARGET}
-	@$(CC) -shared -Wl,-soname,${LIBSOTARGET} -o ${LIBSOTARGET} ${COVOPTS} ${LIBOBJS:%=${OBJDIR}/%}
+	@$(CC) -shared -Wl,-soname,${LIBSOTARGET} -o ${LIBSOTARGET} ${ARCHOPTS} ${COVOPTS} ${LIBOBJS:%=${OBJDIR}/%}
 
 ${OBJDIR}/%.o : ${SRCDIR}/%.cpp
-	@$(CC) ${ARCHOPT} $(COPTS) ${COVOPTS} -c $< -o $@ 
+	@$(CC) ${ARCHOPTS} $(COPTS) ${COVOPTS} -c $< -o $@ 
 
 ${OBJDIR}/%.o : ${SRCDIR}/%.c
-	@$(CC_C) ${ARCHOPT} $(COPTS) ${COVOPTS} -c $< -o $@ 
+	@$(CC_C) ${ARCHOPTS} $(COPTS) ${COVOPTS} -c $< -o $@ 
 
 ##########################################################
 # Microsoft Visual C++ 2010
