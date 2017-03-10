@@ -22,7 +22,7 @@
 // You should have received a copy of the GNU General Public License
 // along with cpumico32. If not, see <http://www.gnu.org/licenses/>.
 //
-// $Id: lm32_cpu_inst.cpp,v 3.2 2016-09-15 18:16:24 simon Exp $
+// $Id: lm32_cpu_inst.cpp,v 3.2 2016/09/15 18:16:24 simon Exp $
 // $Source: /home/simon/CVS/src/cpu/mico32/src/lm32_cpu_inst.cpp,v $
 //
 //=============================================================

@@ -21,7 +21,7 @@
 // You should have received a copy of the GNU General Public License
 // along with lnxmico32. If not, see <http://www.gnu.org/licenses/>.
 //
-// $Id: lnxmico32.h,v 3.1 2016-09-15 18:11:12 simon Exp $
+// $Id: lnxmico32.h,v 3.1 2016/09/15 18:11:12 simon Exp $
 // $Source: /home/simon/CVS/src/cpu/mico32/src/lnxmico32.h,v $
 //
 //=============================================================

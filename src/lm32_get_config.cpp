@@ -22,7 +22,7 @@
 // You should have received a copy of the GNU General Public License
 // along with cpumico32. If not, see <http://www.gnu.org/licenses/>.
 //
-// $Id: lm32_get_config.cpp,v 3.2 2016-09-20 09:31:29 simon Exp $
+// $Id: lm32_get_config.cpp,v 3.3 2017/03/09 15:35:46 simon Exp $
 // $Source: /home/simon/CVS/src/cpu/mico32/src/lm32_get_config.cpp,v $
 //
 //=============================================================
@@ -204,7 +204,7 @@ extern "C" lm32_config_t* lm32_get_config(int argc, char** argv, const char* def
     // Set some defaults
     lm32_cpu_cfg.filename                        = (char*)LM32_DEFAULT_FNAME;
     lm32_cpu_cfg.log_fname                       = (char*)"stdout";
-    lm32_cpu_cfg.entry_point_addr                = -1;
+    lm32_cpu_cfg.entry_point_addr                = 0;
     lm32_cpu_cfg.test_mode                       = 0;
     lm32_cpu_cfg.verbose                         = LM32_VERBOSITY_LVL_OFF;
     lm32_cpu_cfg.ram_dump_addr                   = -1;
@@ -612,7 +612,7 @@ extern "C" lm32_config_t* lm32_get_config(int argc, char** argv, const char* def
         case 'T':
             lm32_cpu_cfg.test_mode = 1;
             break;
-#ifdef LNXMICO32
+#ifndef LNXMICO32              
         case 'm':
             lm32_cpu_cfg.mem_size = strtol(optarg, NULL, 0);
             break;
@@ -623,6 +623,7 @@ extern "C" lm32_config_t* lm32_get_config(int argc, char** argv, const char* def
             // Silently word align the user specified entry point address
             lm32_cpu_cfg.entry_point_addr = (uint32_t)strtol(optarg, NULL, 0) & 0xfffffffc;
             break;
+#else                    
         case 's':
             lm32_cpu_cfg.save_fname = optarg;
             break;

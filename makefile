@@ -21,7 +21,7 @@
 # You should have received a copy of the GNU General Public License
 # along with cpumico32. If not, see <http://www.gnu.org/licenses/>.
 #
-# $Id: makefile,v 3.0 2016-09-07 13:15:22 simon Exp $
+# $Id: makefile,v 3.0 2016/09/07 13:15:22 simon Exp $
 # $Source: /home/simon/CVS/src/cpu/mico32/makefile,v $
 # 
 ##########################################################

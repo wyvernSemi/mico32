@@ -21,7 +21,7 @@
 // You should have received a copy of the GNU General Public License
 // along with lnxmico32. If not, see <http://www.gnu.org/licenses/>.
 //
-// $Id: lnxuart.h,v 3.0 2016-09-07 13:15:39 simon Exp $
+// $Id: lnxuart.h,v 3.0 2016/09/07 13:15:39 simon Exp $
 // $Source: /home/simon/CVS/src/cpu/mico32/src/lnxuart.h,v $
 //
 //=============================================================

@@ -1,10 +1,10 @@
 
 [Setup]
 AppName                 = CPUMICO32
-AppVerName              = CPUMICO32_3_0_2
+AppVerName              = CPUMICO32_3_0_4
 DefaultDirName          = {pf}\mico32
 DisableProgramGroupPage = yes
-OutputBaseFilename      = setup_cpumico32_3_0_2
+OutputBaseFilename      = setup_cpumico32_3_0_4
 
 [Dirs]
 Name: "{app}\obj"
@@ -66,6 +66,10 @@ Source: "src\lnxtimer.cpp";                            DestDir: "{app}\src"
 Source: "src\lnxtimer.h";                              DestDir: "{app}\src"
 Source: "src\lnxuart.cpp";                             DestDir: "{app}\src"
 Source: "src\lnxuart.h";                               DestDir: "{app}\src"
+
+; Python GUI for cpumico32
+Source: "python\lm32.py";                              DestDir: "{app}\python"
+Source: "python\icon.png";                             DestDir: "{app}\python"
 
 ; Linux binaries for lnxmico32 case study
 Source: "test\romfs.ext2";                             DestDir: "{app}\test"
