@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # =======================================================================
 #                                                                        
-#  mico32.py                                           date: 2017/03/07  
+#  lm32.py                                             date: 2017/03/07
 #                                                                        
 #  Author: Simon Southwell                                               
 # 
@@ -24,7 +24,7 @@
 #  You should have received a copy of the GNU General Public License
 #  along with this file. If not, see <http://www.gnu.org/licenses/>.
 #  
-#  $Id: lm32.py,v 1.1 2017/03/13 14:44:46 simon Exp $
+#  $Id: lm32.py,v 1.2 2017/03/15 15:28:42 simon Exp $
 #  $Source: /home/simon/CVS/src/cpu/mico32/python/lm32.py,v $
 #                                                                       
 # =======================================================================
@@ -42,6 +42,30 @@ from tkinter.ttk  import *
 # Only get what's used from the support libraries
 from tkinter.filedialog import askopenfilename
 from tkinter.messagebox import showinfo, showerror
+
+# ----------------------------------------------------------------
+# Define lm32Stdout class to replace standard output
+# IO.
+# ----------------------------------------------------------------
+
+class lm32Stdout(object) :
+
+    # Constructor: save a handle to given textbox object
+    def __init__(self, txtwidget):
+        self.text_space = txtwidget
+
+    # Need a write method
+    def write(self, string):
+        # Add the string being written to trhe end of the text
+        self.text_space.insert('end', string)
+
+        # Make sure end of the newly updated text is visible
+        self.text_space.see(END)
+
+    # Need a flush method to stop exceptions (it is called on closure),
+    # but it doesn't need to do anything
+    def flush(self):
+      pass
 
 # ----------------------------------------------------------------
 # Define the lm32gui class 
@@ -225,7 +249,7 @@ class lm32gui :
     # Only update the entry if the returned value not an empty string,
     # otherwise the checker fires an error when updating the box.
     if fname != '' :
-      self.elfname.set(fname)
+      self.elfname.set(os.path.relpath(fname, self.rundir))
   
   # __lm32About()
   #
@@ -250,7 +274,7 @@ class lm32gui :
     # Only update the entry if the returned value not an empty string,
     # otherwise the checker fires an error when updating the box.
     if fname != '' :
-      self.inifile.set(fname)
+      self.inifile.set(os.path.relpath(fname, self.rundir))
 
   # __lm32GetLog()
   #
@@ -264,7 +288,7 @@ class lm32gui :
     # Only update the entry if the returned value not an empty string,
     # otherwise the checker fires an error when updating the box.
     if fname != '' :
-      self.logfile.set(fname)
+      self.logfile.set(os.path.relpath(fname, self.rundir))
  
   # __lm32DumpAddrUpdated()
   #
@@ -284,8 +308,14 @@ class lm32gui :
   # Callback for 'Run' button. Construct command string for cpu6502 and execute
   #
   def __lm32RunCmd(self) :
-  
-    cmdstr = 'cpumico32 '
+
+    # On windows (or Cygwin), run the .exe version
+    if os.name == 'nt' or sys.platform == 'cygwin':
+      cmdstr = 'cpumico32.exe '
+    else :
+      cmdstr = 'cpumico32 '
+
+    # Initialise the return list to be a single element list
     rtnlist = [0]
     
     # ------------------------------------------------
@@ -419,11 +449,27 @@ class lm32gui :
     # ELF program file 
     valstr = self.elfname.get()
     if valstr != '' and valstr != lm32gui.__LM32DEFAULTelfname :
-      cmdstr += '-f ' + valstr + ' '   
-    
+      cmdstr += '-f ' + valstr + ' '
+
+    # Create a popup window for the output
+    txthdl = lm32gui.__lm32CreateStdoutPopup()
+
+    # Print the command string that we're about to execute for future reference
     print (cmdstr)
 
+    # Run the command in a new process
     self.__lm32ShellCmd(cmdstr)
+
+    # If the log is not to stdout, append the file's contents to the text box
+    if self.logfile.get() != 'stdout' :
+
+      try :
+        logfp = open(self.logfile.get())
+        txthdl.insert(END, logfp.read())
+        txthdl.see(END)
+        logfp.close()
+      except :
+        showerror('Logfile Open', 'Error when reading logfile contents')
     
   # __lm32CfgUpdated()
   #
@@ -488,32 +534,20 @@ class lm32gui :
   #  cd         : Flag indicating, if printing, whether to output a cd command
   #  background : Flag indicating to run command in the background
   #
+
   @staticmethod
-  def __lm32ShellCmd (cmd_str, curr_dir = None, print_only=False, cd=True, background=False) :
-  
-    rtn_status = 0
-    useShell   = True  # subprocess commands default to using shell, in case a built-in is used
-    
-    # If only printing...
-    if print_only :
-    
-      # If required to print a 'change directory' command, and not the default...
-      if cd and curr_dir is not None :
-        print ('cd ' + curr_dir)
-      # Print the command
-      print (cmd_str)
-  	
-    else :
-    
-      # If requested to run in the background, use Popen without assigning its output
-      # to anything. 
-      if background :
-        subprocess.Popen(cmd_str, shell=useShell, cwd=curr_dir)
-      # Run subprocess.call() and wait for a return status
-      else :
-        rtn_status = subprocess.call(cmd_str, shell=useShell, cwd=curr_dir)
-  
-      return rtn_status
+  def __lm32ShellCmd (cmd_str, curr_dir = None) :
+
+    # Run a process for the command
+    proc = subprocess.Popen(cmd_str, shell=True, cwd=curr_dir,
+                            stdout = subprocess.PIPE, stderr = subprocess.PIPE,
+                            universal_newlines = True)
+
+    # Get the output from the process
+    rtn_stdout, rtn_stderr = proc.communicate()
+
+    print(rtn_stdout)
+
 
   # __lm32CheckStringNum()
   #
@@ -789,9 +823,10 @@ class lm32gui :
     framerow +=1
     execframe.grid(row=framerow, columnspan=totalcols, pady=5)
 
-
     # Start of Tk event loop
     mainloop()
+
+
   
   # __lm32CreateCfgPopup()
   #
@@ -843,6 +878,42 @@ class lm32gui :
     btn = Button(toplevel, text = 'Close', command = toplevel.destroy)
     btn.grid (row = curr_row, column = 0, pady = 10)
     curr_row += 1
+
+  # __lm32CreateStdoutPopup()
+  #
+  # Create the cpumico32 run output pop up
+  #
+  @staticmethod
+  def __lm32CreateStdoutPopup () :
+
+    curr_row = 0
+
+    # Create a top level window
+    toplevel = Toplevel()
+    toplevel.title('output')
+
+    # Create a scroll bar widget
+    scrollbar = Scrollbar(toplevel)
+
+    # Add a text box to first row
+    txtbox = Text(toplevel, height=40, width=80, yscrollcommand = scrollbar.set)
+    txtbox.grid(row = curr_row, column = 0, pady=5, padx=5)
+
+    # Add the scroll bar in the same row as the text box, and connect to its Y view
+    scrollbar.grid(row = curr_row, column = 1, stick = N+S)
+    scrollbar.config(command  = txtbox.yview)
+
+    # Redirect stdout to the textbox using the previously defined class
+    # to replace the sys one.
+    sys.stdout = lm32Stdout(txtbox)
+    curr_row += 1
+
+    # In the next row, add a close button
+    btn = Button(toplevel, text='Close', command=toplevel.destroy)
+    btn.grid(row = curr_row, column = 0, pady = 10)
+
+    return txtbox
+
     
   # ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
   # 'Public' methods
