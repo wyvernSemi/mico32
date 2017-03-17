@@ -24,7 +24,7 @@
 #  You should have received a copy of the GNU General Public License
 #  along with this file. If not, see <http://www.gnu.org/licenses/>.
 #  
-#  $Id: lm32.py,v 1.3 2017/03/17 13:39:53 simon Exp $
+#  $Id: lm32.py,v 1.4 2017/03/17 15:09:16 simon Exp $
 #  $Source: /home/simon/CVS/src/cpu/mico32/python/lm32.py,v $
 #                                                                       
 # =======================================================================
@@ -1023,11 +1023,12 @@ class lm32gui (lm32GuiBase, wyTkinterUtils):
 
   # _lm32SetIcon()
   #
-  # Set the icon for the given widget
+  # Set the icon for the given widget (windows only)
   #
   def __lm32SetIcon(self, widget) :
 
-    widget.iconbitmap(os.path.join(self.scriptdir.get(), 'favicon.ico'))
+    if os.name == 'nt' :
+      widget.iconbitmap(os.path.join(self.scriptdir.get(), 'favicon.ico'))
 
   # ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
   # 'Public' methods
