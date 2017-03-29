@@ -22,7 +22,7 @@
 // You should have received a copy of the GNU General Public License
 // along with cpumico32. If not, see <http://www.gnu.org/licenses/>.
 //
-// $Id: lm32_cpu.cpp,v 3.5 2016/09/20 09:32:35 simon Exp $
+// $Id: lm32_cpu.cpp,v 3.6 2017/03/29 13:36:29 simon Exp $
 // $Source: /home/simon/CVS/src/cpu/mico32/src/lm32_cpu.cpp,v $
 //
 //=============================================================
@@ -382,7 +382,7 @@ uint32_t lm32_cpu::lm32_read_mem (const uint32_t byte_addr_raw, const int type)
     // Local holder for read data
     uint32_t data;
     
-    int  mem_callback_delay;
+    int  mem_callback_delay    = LM32_EXT_MEM_NOT_PROCESSED;
 
     // Local cache state
     int  cache_hit             = LM32_CACHE_MISS;       // Flag if cache hit/miss (or miss if no cache access)
@@ -838,7 +838,7 @@ void lm32_cpu::interrupt (const int interrupt_id)
         break;
 
     default:
-        fprintf(stderr, "***ERROR: invalid exeption ID (%d)\n", interrupt_id);                  //LCOV_EXCL_LINE
+        fprintf(stderr, "***ERROR: invalid exception ID (%d)\n", interrupt_id);                 //LCOV_EXCL_LINE
         exit(LM32_INTERNAL_ERROR);                                                              //LCOV_EXCL_LINE
         break;
     }
