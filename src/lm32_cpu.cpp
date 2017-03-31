@@ -22,7 +22,7 @@
 // You should have received a copy of the GNU General Public License
 // along with cpumico32. If not, see <http://www.gnu.org/licenses/>.
 //
-// $Id: lm32_cpu.cpp,v 3.6 2017/03/29 13:36:29 simon Exp $
+// $Id: lm32_cpu.cpp,v 3.7 2017/03/31 11:48:39 simon Exp $
 // $Source: /home/simon/CVS/src/cpu/mico32/src/lm32_cpu.cpp,v $
 //
 //=============================================================
@@ -384,11 +384,34 @@ uint32_t lm32_cpu::lm32_read_mem (const uint32_t byte_addr_raw, const int type)
     
     int  mem_callback_delay    = LM32_EXT_MEM_NOT_PROCESSED;
 
+    // Make sure we have some memory
+    if (mem == NULL) 
+    {
+         if ((mem = (uint8_t *)malloc(num_mem_bytes/sizeof(uint8_t))) == NULL)          //LCOV_EXCL_LINE
+         {
+            fprintf(stderr, "***ERROR: memory allocation failure\n");                   //LCOV_EXCL_LINE
+            exit(LM32_INTERNAL_ERROR);                                                  //LCOV_EXCL_LINE
+         }
+
+         mem16 = (uint16_t*)mem;                                                        //LCOV_EXCL_LINE
+         mem32 = (uint32_t*)mem;                                                        //LCOV_EXCL_LINE
+    }
+
     // Local cache state
     int  cache_hit             = LM32_CACHE_MISS;       // Flag if cache hit/miss (or miss if no cache access)
 
 #ifndef LM32_FAST_COMPILE
     uint32_t byte_addr = byte_addr_raw % num_mem_bytes;
+
+    // Allocate some space for the memory tag as well, initialised to 0
+    if (mem_tag == NULL)
+    {
+        if ((mem_tag = (uint8_t *)calloc(num_mem_bytes/sizeof(uint8_t), sizeof(uint8_t))) == NULL)
+        {
+            fprintf(stderr, "***ERROR: memory allocation failure\n");                    //LCOV_EXCL_LINE
+            exit(LM32_INTERNAL_ERROR);                                                   //LCOV_EXCL_LINE
+        }
+    }
 
     bool cache_access          = false;                 // Flag if access was via cache
     int  cache_words_per_line;                          // Number of words per line for accessed cache
@@ -559,7 +582,7 @@ uint32_t lm32_cpu::lm32_read_mem (const uint32_t byte_addr_raw, const int type)
 
 void lm32_cpu::lm32_write_mem(const uint32_t byte_addr_raw, const uint32_t data, const int type, const bool disable_cycle_count)
 {
-    int  mem_callback_delay;
+    int  mem_callback_delay = LM32_EXT_MEM_NOT_PROCESSED;
 
     // Make a copy of the input word to avoid possibility of callback over-writing
     // input and then flagging for a local update
@@ -792,6 +815,14 @@ void lm32_cpu::internal_reset_cpu()
     state.wp1  = 0;
     state.wp2  = 0;
     state.wp3  = 0;
+
+    // Reset the frame and stack pointers to top of configured internal
+    // memory (will be 0 if no internal memory). This is not really done
+    // at reset, but is useful to forgo a start up routine. Will get 
+    // overwritten in any case if a real startup is executed at reset (when r 
+    // registers have undefined state anyway).
+    state.r[SP_REG_IDX] = mem_offset + num_mem_bytes - 4;
+    state.r[FP_REG_IDX] = mem_offset + num_mem_bytes - 4;
 
     // Model state
     break_point    = 0;

@@ -23,7 +23,7 @@
 // You should have received a copy of the GNU General Public License
 // along with cpumico32. If not, see <http://www.gnu.org/licenses/>.
 //
-// $Id: cpumico32.cpp,v 3.1 2016/09/14 08:50:47 simon Exp $
+// $Id: cpumico32.cpp,v 3.2 2017/03/31 11:48:39 simon Exp $
 // $Source: /home/simon/CVS/src/cpu/mico32/src/cpumico32.cpp,v $
 //
 //=============================================================
@@ -39,6 +39,7 @@
 
 #include "lm32_cpu.h"
 #include "lm32_get_config.h"
+#include "lm32_gdb.h"
 
 #if !defined _WIN32 && !defined _WIN64
 #ifdef CYGWIN
@@ -190,19 +191,34 @@ int main (int argc, char** argv)
         }
     }
 
-    // Run the program in the specified file on the ISS. Re-enter if the returned status
-    // was for a watch- or breakpoint or single stepping, as this is a test program exit.
-    int rtn_status;
-    bool load_code = true;
-    do
+    if (!p_cfg->gdb_run)
     {
+        // Run the program in the specified file on the ISS. Re-enter if the returned status
+        // was for a watch- or breakpoint or single stepping, as this is a test program exit.
+        int rtn_status;
+        bool load_code = true;
+        do
+        {
+    
+            rtn_status = cpu->lm32_run_program(p_cfg->filename, p_cfg->num_run_instructions, p_cfg->user_break_addr, exec_type, load_code);
+            load_code = false;
+    
+        } while (rtn_status == LM32_HW_BREAKPOINT_BREAK || rtn_status == LM32_HW_WATCHPOINT_BREAK || 
+                 rtn_status == LM32_SINGLE_STEP_BREAK   || rtn_status == LM32_TICK_BREAK ||
+                 rtn_status == LM32_RESET_BREAK);
+    }
 
-        rtn_status = cpu->lm32_run_program(p_cfg->filename, p_cfg->num_run_instructions, p_cfg->user_break_addr, exec_type, load_code);
-        load_code = false;
-
-    } while (rtn_status == LM32_HW_BREAKPOINT_BREAK || rtn_status == LM32_HW_WATCHPOINT_BREAK || 
-             rtn_status == LM32_SINGLE_STEP_BREAK   || rtn_status == LM32_TICK_BREAK ||
-             rtn_status == LM32_RESET_BREAK);
+#if !(defined(_WIN32) || defined(_WIN64) || defined(__CYGWIN__))
+    else
+    {
+        // Start procssing commands from GDB
+        if (process_gdb(cpu))
+        {
+            fprintf(stderr, "***ERROR in opening PTY\n");
+            return -1;
+        }
+    }
+#endif
 
     // Dump registers after completion, if specified to do so
     if (p_cfg->dump_registers)

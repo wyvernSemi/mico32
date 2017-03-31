@@ -21,7 +21,7 @@
 # You should have received a copy of the GNU General Public License
 # along with cpumico32. If not, see <http://www.gnu.org/licenses/>.
 #
-# $Id: makefile,v 3.0 2016/09/07 13:15:22 simon Exp $
+# $Id: makefile,v 3.1 2017/03/31 11:47:30 simon Exp $
 # $Source: /home/simon/CVS/src/cpu/mico32/makefile,v $
 # 
 ##########################################################
@@ -32,6 +32,8 @@
 
 BASENAME=cpumico32
 LIBBASENAME=libmico32
+
+OSTYPE:=$(shell uname -o)
 
 # If BUILDC is defined (as something---doesn't matter what), then we're
 # doing a build of the C top level program.
@@ -49,16 +51,17 @@ LIBSOTARGET=${LIBBASENAME}.so
 LIBOBJS=lm32_cpu.o lm32_cpu_inst.o lm32_cpu_elf.o lm32_cpu_disassembler.o lm32_cpu_c.o lm32_cache.o
 OBJECTS=${TARGET}.o lm32_get_config.o
 
+ifneq (${OSTYPE}, Cygwin)
+OBJECTS += lm32_gdb.o
+endif
+
 LCOVINFO=lm32.info
 COVLOGFILE=cov.log
 COVDIR=cov_html
 
-
 SRCDIR=./src
 OBJDIR=./obj
 TESTDIR=./test
-
-OSTYPE:=$(shell uname -o)
 
 CC=g++
 CC_C=gcc
@@ -83,12 +86,16 @@ all : ${TARGET}
 
 ${OBJDIR}/${TARGET}.o             : ${SRCDIR}/lm32_cpu.h ${SRCDIR}/lm32_cpu_hdr.h
 
-${OBJDIR}/lm32_cpu.o              : ${SRCDIR}/lm32_cpu.h ${SRCDIR}/lm32_cpu_hdr.h ${SRCDIR}/lm32_cpu_mico32.h ${SRCDIR}/lm32_cpu_elf.h ${SRCDIR}/lm32_cache.h
-${OBJDIR}/lm32_cpu_elf.o          : ${SRCDIR}/lm32_cpu.h ${SRCDIR}/lm32_cpu_hdr.h ${SRCDIR}/lm32_cpu_mico32.h ${SRCDIR}/lm32_cpu_elf.h
-${OBJDIR}/lm32_cpu_inst.o         : ${SRCDIR}/lm32_cpu.h ${SRCDIR}/lm32_cpu_hdr.h ${SRCDIR}/lm32_cpu_mico32.h
-${OBJDIR}/lm32_cache.o            : ${SRCDIR}/lm32_cpu_hdr.h ${SRCDIR}/lm32_cache.h
-${OBJDIR}/lm32_cpu_disassembler.o : ${SRCDIR}/lm32_cpu.h ${SRCDIR}/lm32_cpu_hdr.h ${SRCDIR}/lm32_cpu_mico32.h
-${OBJDIR}/lm32_cpu_c.o            : ${SRCDIR}/lm32_cpu.h ${SRCDIR}/lm32_cpu_hdr.h ${SRCDIR}/lm32_cpu_c.h
+${OBJDIR}/lm32_cpu.o              : ${SRCDIR}/lm32_cpu.h     ${SRCDIR}/lm32_cpu_hdr.h ${SRCDIR}/lm32_cpu_mico32.h ${SRCDIR}/lm32_cpu_elf.h   ${SRCDIR}/lm32_cache.h ${SRCDIR}/lm32_cpu.cpp
+${OBJDIR}/lm32_cpu_elf.o          : ${SRCDIR}/lm32_cpu.h     ${SRCDIR}/lm32_cpu_hdr.h ${SRCDIR}/lm32_cpu_mico32.h ${SRCDIR}/lm32_cpu_elf.cpp ${SRCDIR}/lm32_cpu_elf.h
+${OBJDIR}/lm32_cpu_inst.o         : ${SRCDIR}/lm32_cpu.h     ${SRCDIR}/lm32_cpu_hdr.h ${SRCDIR}/lm32_cpu_mico32.h ${SRCDIR}/lm32_cpu_inst.cpp
+${OBJDIR}/lm32_cache.o            : ${SRCDIR}/lm32_cpu_hdr.h ${SRCDIR}/lm32_cache.cpp ${SRCDIR}/lm32_cache.h
+${OBJDIR}/lm32_cpu_disassembler.o : ${SRCDIR}/lm32_cpu.h     ${SRCDIR}/lm32_cpu_hdr.h ${SRCDIR}/lm32_cpu_mico32.h ${SRCDIR}/lm32_cpu_disassembler.cpp
+${OBJDIR}/lm32_cpu_c.o            : ${SRCDIR}/lm32_cpu.h     ${SRCDIR}/lm32_cpu_hdr.h ${SRCDIR}/lm32_cpu.h ${SRCDIR}/lm32_cpu_c.cpp ${SRCDIR}/lm32_cpu_c.h
+
+ifneq (${OSTYPE}, Cygwin)
+${OBJDIR}/lm32_gdb.o              : ${SRCDIR}/lm32_cpu.h     ${SRCDIR}/lm32_cpu_hdr.h ${SRCDIR}/lm32_gdb.cpp ${SRCDIR}/lm32_gdb.h
+endif
 
 ##########################################################
 # Compilation rules

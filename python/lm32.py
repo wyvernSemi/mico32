@@ -24,7 +24,7 @@
 #  You should have received a copy of the GNU General Public License
 #  along with this file. If not, see <http://www.gnu.org/licenses/>.
 #  
-#  $Id: lm32.py,v 1.4 2017/03/17 15:09:16 simon Exp $
+#  $Id: lm32.py,v 1.5 2017/03/31 11:48:21 simon Exp $
 #  $Source: /home/simon/CVS/src/cpu/mico32/python/lm32.py,v $
 #                                                                       
 # =======================================================================
@@ -42,6 +42,8 @@ from tkinter.ttk  import *
 # Only promote what's used from the support libraries
 from tkinter.filedialog import askopenfilename, askdirectory
 from tkinter.messagebox import showinfo, showerror
+
+from threading import Timer
 
 # ----------------------------------------------------------------
 # Define lm32Stdout class to replace standard output IO.
@@ -239,6 +241,7 @@ class lm32GuiBase :
   # NB: meant to be READ ONLY.
 
   _LM32DEFAULTelfname            = 'test.elf'
+  _LM32DEFAULTgdb                = 0
   _LM32DEFAULTdumpregs           = 0
   _LM32DEFAULTdumpnuminstr       = 0
   _LM32DEFAULTdisassemble        = 0
@@ -282,7 +285,7 @@ class lm32GuiBase :
                             shell              = True,
                             cwd                = curr_dir,
                             stdout             = subprocess.PIPE,
-                            stderr             = subprocess.PIPE,
+                            #stderr             = subprocess.PIPE,
                             universal_newlines = True)
 
     # Get the output from the process after the process terminates
@@ -339,6 +342,7 @@ class lm32gui (lm32GuiBase, wyTkinterUtils):
     # Create some Tk class variables to allow auto-update of
     # widgets. The 'boolean' checkbutton vars are integers,
     # with the rest as strings (even if meant for numbers)
+    self.gdb                = IntVar()
     self.dumpregs           = IntVar()
     self.dumpnuminstr       = IntVar()
     self.disassemble        = IntVar()
@@ -397,6 +401,7 @@ class lm32gui (lm32GuiBase, wyTkinterUtils):
     self.__lm32SetIcon(self.root)
    
     # Set the Tk variables to default values
+    self.gdb.set                (lm32gui._LM32DEFAULTgdb               )
     self.elfname.set            (lm32gui._LM32DEFAULTelfname           )
     self.dumpregs.set           (lm32gui._LM32DEFAULTdumpregs          )
     self.dumpnuminstr.set       (lm32gui._LM32DEFAULTdumpnuminstr      )
@@ -576,6 +581,16 @@ class lm32gui (lm32GuiBase, wyTkinterUtils):
     else :
       self.dbhdl.config(state = NORMAL)
  
+  # __lm32DebugCmd()
+  #
+  # Callback for 'Debug' button. Construct command string for cpu6502 and execute
+  #
+  def __lm32DebugCmd(self) :
+
+    self.gdb.set(1)
+    self.__lm32RunCmd()
+    self.gdb.set(0)
+        
   # __lm32RunCmd()
   #
   # Callback for 'Run' button. Construct command string for cpu6502 and execute
@@ -602,6 +617,11 @@ class lm32gui (lm32GuiBase, wyTkinterUtils):
     # Flags
     
     flagstr = ''
+
+    # GDB debugging
+    if self.gdb.get() != 0 :
+      flagstr += 'g'
+
     # Dump regs
     if self.dumpregs.get() != 0 :
       flagstr += 'D'
@@ -917,7 +937,12 @@ class lm32gui (lm32GuiBase, wyTkinterUtils):
     
     # Add a 'Run' button to a new frame
     execframe = Frame(master = self.root)
-    Button(master = execframe, text = 'Run', command = self.__lm32RunCmd).grid (row = 0, column = 0, padx=10)
+    Button(master = execframe, text = 'Run',   command = self.__lm32RunCmd).grid   (row = 0, column = 0, padx=10)
+
+    # Add a 'Debug' button (if not windows or cygwin)
+    if os.name != 'nt' and sys.platform != 'cygwin':
+      dbghdl = Button(master = execframe, text = 'Debug', command = self.__lm32DebugCmd)
+      dbghdl.grid (row = 0, column = 1, padx=10)          
     
     # Add Run button frame in a new row, spanning all three columns
     framerow +=1

@@ -1,13 +1,14 @@
 .\" Manpage for cpumico32.
 .\" Contact simon@anita-simulators.org.uk to correct errors or typos.
-.TH man 1 "04 June 2013" "1.0" "nuseradd man page"
+.TH man 1 "29 March 2017" "1.0" "nuseradd man page"
 .SH NAME
 cpumico32 \- LatticeMico32 instruction set simulator
 .SH SYNOPSIS
 .B cpumico32 
-[-v] [-x] [-d] [-D] [-n <num>] [-b <addr>] [-r <addr>]
-          [-R <num_bytes> ] [-f <filename>] [-m <num_bytes>] [-l <filename>]
-          [-c <config_word> ] [-w <wait states>] [-i <filename>] [-T]
+[-g] [-v] [-x] [-d] [-D] [-I] [-n <num>] [-b <addr>]
+          [-r <addr>] [-R <#bytes>] [-f <fname>] [-m <#bytes>] 
+          [-o <addr>] [-e <addr>] [-l <fname>] [-c <cfg_word> ] 
+          [-w <waits>] [-i <fname>] [-T]
 .SH DESCRIPTION
 .LP
 cpumico32 is an instruction set simulator of the LatticMico32 MCU. It 
@@ -126,6 +127,12 @@ LatticeMico32 Processor Reference Manual.
 
 .SH OPTIONS
 .TP 5
+.B -g 
+Run the program in GDB remote debug mode (linux only). The program will open a pseudo
+terminal and print the device path, which gdb can the attach to as a remote target.
+The CPU does not start executing, and this is controlled from within GDB once
+connection is established. Default is non-debugging.
+.TP 5
 .BI -n " num"
 Specify number of instructions to run. Default is to run forever
 .TP 5
@@ -160,7 +167,13 @@ is specified.  Default is enabled.
 Address to dump value from internal ram after completion. Address is forced to be aligned with word boundary. Default is no dump.
 .TP 5
 .BI -R " num_bytes"
-Number of bytes to dump from RAM if -r specified. Number rounded up to multiples of 4 bytes. Default is 4 bytes. 
+Number of bytes to dump from RAM if -r specified. Number rounded up to multiples of 4 bytes. Default is 4 bytes.
+.TP 5
+.BI -o " addr"
+Address offset of internal memory (if memory size not 0). Default is 0x00000000.
+.TP 5
+.BI -e " addr"
+Entry point address (i.e. reset address). Default is 0x00000000.
 .TP 5
 .B -D 
 Dump registers after program execution completion. Default is no dump.

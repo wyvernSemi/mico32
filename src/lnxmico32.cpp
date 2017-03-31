@@ -21,7 +21,7 @@
 // You should have received a copy of the GNU General Public License
 // along with lnxmico32. If not, see <http://www.gnu.org/licenses/>.
 //
-// $Id: lnxmico32.cpp,v 3.2 2016/09/16 08:29:35 simon Exp $
+// $Id: lnxmico32.cpp,v 3.3 2017/03/31 11:48:39 simon Exp $
 // $Source: /home/simon/CVS/src/cpu/mico32/src/lnxmico32.cpp,v $
 //
 //=============================================================
@@ -53,6 +53,7 @@ extern char* optarg;
 
 #include "lm32_cpu.h"
 #include "lm32_get_config.h"
+#include "lm32_gdb.h"
 #include "lnxmico32.h"
 #include "lnxtimer.h"
 #include "lnxuart.h"
@@ -629,44 +630,58 @@ int main (int argc, char** argv)
     cpu->lm32_register_ext_mem_callback(ext_mem_access);
     cpu->lm32_register_int_callback(ext_interrupt);
 
-    // Load vmlinux.bin
-    int rd_length = load_binary_data(LM32_VM_LINUX_FNAME, LM32_KERNEL_BASE_ADDR);
-
-    // Load romfs.ext2
-    rd_length     = load_binary_data(LM32_FILE_SYS_FNAME, LM32_INIT_RD_BASE_ADDR);
-
-    // Initialise memory tags *after* loading code, so as not to count instructions
-    for(int idx = 0; idx < (LM32_MEM_WR_BUF_SIZE); idx++)
+    if (!p_cfg->gdb_run)
     {
-        mem_wr[idx] = false;
+        // Load vmlinux.bin
+        int rd_length = load_binary_data(LM32_VM_LINUX_FNAME, LM32_KERNEL_BASE_ADDR);
+    
+        // Load romfs.ext2
+        rd_length     = load_binary_data(LM32_FILE_SYS_FNAME, LM32_INIT_RD_BASE_ADDR);
+    
+        // Initialise memory tags *after* loading code, so as not to count instructions
+        for(int idx = 0; idx < (LM32_MEM_WR_BUF_SIZE); idx++)
+        {
+            mem_wr[idx] = false;
+        }
+    
+        // Put command line into memory
+        load_string_to_mem(LM32_CMDLINE_STR, LM32_CMDLINE_BASE_ADDR);
+    
+        // Write the hardware setup values to memory
+        load_hwsetup_to_mem(LM32_HWSETUP_BASE_ADDR);
+    
+        // Pre-charge the GP regs 1 to 4 with locations
+        cpu->lm32_set_gp_reg(1, LM32_HWSETUP_BASE_ADDR);
+        cpu->lm32_set_gp_reg(2, LM32_CMDLINE_BASE_ADDR);
+        cpu->lm32_set_gp_reg(3, LM32_INIT_RD_BASE_ADDR);
+        cpu->lm32_set_gp_reg(4, LM32_INIT_RD_BASE_ADDR + rd_length);
+    
+        // If enabled, and a state file exists, load state
+        if (p_cfg->load_state_file)
+        {
+            load_system_state();
+        }
+    
+        // Turn off key input echoing, as the running OS software will do this
+        pre_run_setup();
+    
+        // Run the CPU.
+        (void)cpu->lm32_run_program(NULL, p_cfg->num_run_instructions, p_cfg->user_break_addr, LM32_RUN_FROM_RESET, false);
+    
+        // Turn key input echoing back on
+        post_run_setup();
     }
-
-    // Put command line into memory
-    load_string_to_mem(LM32_CMDLINE_STR, LM32_CMDLINE_BASE_ADDR);
-
-    // Write the hardware setup values to memory
-    load_hwsetup_to_mem(LM32_HWSETUP_BASE_ADDR);
-
-    // Pre-charge the GP regs 1 to 4 with locations
-    cpu->lm32_set_gp_reg(1, LM32_HWSETUP_BASE_ADDR);
-    cpu->lm32_set_gp_reg(2, LM32_CMDLINE_BASE_ADDR);
-    cpu->lm32_set_gp_reg(3, LM32_INIT_RD_BASE_ADDR);
-    cpu->lm32_set_gp_reg(4, LM32_INIT_RD_BASE_ADDR + rd_length);
-
-    // If enabled, and a state file exists, load state
-    if (p_cfg->load_state_file)
+#if !(defined(_WIN32) || defined(_WIN64) || defined (__CYGWIN__))
+    else
     {
-        load_system_state();
+        // Start procssing commands from GDB
+        if (process_gdb(cpu))
+        {
+            fprintf(stderr, "***ERROR in opening PTY\n");
+            return -1;
+        }
     }
-
-    // Turn off key input echoing, as the running OS software will do this
-    pre_run_setup();
-
-    // Run the CPU.
-    (void)cpu->lm32_run_program(NULL, p_cfg->num_run_instructions, p_cfg->user_break_addr, LM32_RUN_FROM_RESET, false);
-
-    // Turn key input echoing back on
-    post_run_setup();
+#endif
 
     // Dump registers after completion, if specified to do so
     if (p_cfg->dump_registers)

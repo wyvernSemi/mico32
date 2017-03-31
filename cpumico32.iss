@@ -1,10 +1,10 @@
 
 [Setup]
 AppName                 = CPUMICO32
-AppVerName              = CPUMICO32_3_0_4
+AppVerName              = CPUMICO32_3_0_6
 DefaultDirName          = {pf}\mico32
 DisableProgramGroupPage = yes
-OutputBaseFilename      = setup_cpumico32_3_0_4
+OutputBaseFilename      = setup_cpumico32_3_0_6
 
 [Dirs]
 Name: "{app}\obj"
@@ -60,6 +60,8 @@ Source: "src\lm32_cpu_inst.cpp";                       DestDir: "{app}\src"
 Source: "src\lm32_cpu_mico32.h";                       DestDir: "{app}\src"
 Source: "src\lm32_get_config.cpp";                     DestDir: "{app}\src"
 Source: "src\lm32_get_config.h";                       DestDir: "{app}\src"
+Source: "src\lm32_gdb.cpp";                            DestDir: "{app}\src"
+Source: "src\lm32_gdb.h";                              DestDir: "{app}\src"
 Source: "src\lnxmico32.cpp";                           DestDir: "{app}\src"
 Source: "src\lnxmico32.h";                             DestDir: "{app}\src"
 Source: "src\lnxtimer.cpp";                            DestDir: "{app}\src"
@@ -69,7 +71,8 @@ Source: "src\lnxuart.h";                               DestDir: "{app}\src"
 
 ; Python GUI for cpumico32
 Source: "python\lm32.py";                              DestDir: "{app}\python"
-Source: "python\icon.png";                             DestDir: "{app}\python"
+Source: "python\icon.gif";                             DestDir: "{app}\python"
+Source: "python\favicon.ico";                          DestDir: "{app}\python"
 
 ; Linux binaries for lnxmico32 case study
 Source: "test\romfs.ext2";                             DestDir: "{app}\test"

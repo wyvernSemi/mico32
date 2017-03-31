@@ -21,7 +21,7 @@
 # You should have received a copy of the GNU General Public License
 # along with lnxmico32. If not, see <http://www.gnu.org/licenses/>.
 #
-# $Id: makefile.lnx,v 3.3 2016/10/19 13:33:22 simon Exp $
+# $Id: makefile.lnx,v 3.4 2017/03/31 11:47:39 simon Exp $
 # $Source: /home/simon/CVS/src/cpu/mico32/makefile.lnx,v $
 # 
 ##########################################################
@@ -32,6 +32,8 @@
 
 BASENAME=lnxmico32
 LIBBASENAME=libmico32
+
+OSTYPE:=$(shell uname -o)
 
 # If BUILDC is defined (as something---doesn't matter what), then we're
 # doing a build of the C top level program.
@@ -49,6 +51,10 @@ LIBSOTARGET=${LIBBASENAME}.so
 LIBOBJS=lm32_cpu.o lm32_cpu_inst.o lm32_cpu_disassembler.o lm32_cpu_c.o lm32_cache.o
 OBJECTS=${TARGET}.o lm32_get_config.o lnxuart.o lnxtimer.o
 
+ifneq (${OSTYPE}, Cygwin)
+OBJECTS += lm32_gdb.o
+endif 
+
 LCOVINFO=lm32.info
 COVLOGFILE=cov.log
 COVDIR=cov_html
@@ -57,8 +63,6 @@ COVDIR=cov_html
 SRCDIR=./src
 OBJDIR=./obj_lnx
 TESTDIR=./test
-
-OSTYPE:=$(shell uname -o)
 
 CC=g++
 CC_C=gcc
@@ -96,6 +100,10 @@ ${OBJDIR}/lm32_cpu_inst.o         : ${SRCDIR}/lm32_cpu.h ${SRCDIR}/lm32_cpu_hdr.
 ${OBJDIR}/lm32_cache.o            : ${SRCDIR}/lm32_cpu_hdr.h ${SRCDIR}/lm32_cache.h
 ${OBJDIR}/lm32_cpu_disassembler.o : ${SRCDIR}/lm32_cpu.h ${SRCDIR}/lm32_cpu_hdr.h ${SRCDIR}/lm32_cpu_mico32.h
 ${OBJDIR}/lm32_cpu_c.o            : ${SRCDIR}/lm32_cpu.h ${SRCDIR}/lm32_cpu_hdr.h ${SRCDIR}/lm32_cpu_c.h
+
+ifneq (${OSTYPE}, Cygwin)
+${OBJDIR}/lm32_gdb.o              : ${SRCDIR}/lm32_cpu.h ${SRCDIR}/lm32_cpu_hdr.h ${SRCDIR}/lm32_gdb.cpp ${SRCDIR}/lm32_gdb.h
+endif
 
 ${OBJDIR}/lm32_get_config.o       : ${SRCDIR}/lm32_cpu_hdr.h
 ${OBJDIR}/lnxuart.o               : ${SRCDIR}/lm32_cpu.h ${SRCDIR}/lm32_cpu_hdr.h ${SRCDIR}/lm32_cache.h ${SRCDIR}/lnxmico32.h

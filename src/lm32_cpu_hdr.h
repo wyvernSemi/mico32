@@ -21,7 +21,7 @@
 // You should have received a copy of the GNU General Public License
 // along with cpumico32. If not, see <http://www.gnu.org/licenses/>.
 //
-// $Id: lm32_cpu_hdr.h,v 3.0 2016/09/07 13:15:37 simon Exp $
+// $Id: lm32_cpu_hdr.h,v 3.1 2017/03/31 11:48:39 simon Exp $
 // $Source: /home/simon/CVS/src/cpu/mico32/src/lm32_cpu_hdr.h,v $
 //
 //=============================================================
@@ -168,10 +168,22 @@
 #define LM32_CSR_ID_WP3              (0x1b)
 
 // Watchpoint control values
-#define LM32_WP_DISABLED             (0x00 << 5)
-#define LM32_WP_BREAK_ON_READ        (0x01 << 5)
-#define LM32_WP_BREAK_ON_WRITE       (0x02 << 5)
-#define LM32_WP_BREAK_ALWAYS         (0x03 << 5)
+#define LM32_WP_DISABLED             (0x00)
+#define LM32_WP_BREAK_ON_READ        (0x01)
+#define LM32_WP_BREAK_ON_WRITE       (0x02)
+#define LM32_WP_BREAK_ALWAYS         (0x03)
+
+// Watchpoint DC reg bit positions
+#define LM32_WP0_BIT                 2
+#define LM32_WP1_BIT                 4
+#define LM32_WP2_BIT                 6
+#define LM32_WP3_BIT                 8
+
+// Wathcpoint DC reg masks
+#define LM32_WP0_DC_MASK             (0x3 << LM32_WP0_BIT)
+#define LM32_WP1_DC_MASK             (0x3 << LM32_WP1_BIT)
+#define LM32_WP2_DC_MASK             (0x3 << LM32_WP2_BIT)
+#define LM32_WP3_DC_MASK             (0x3 << LM32_WP3_BIT)
 
 // Reset values for base addresses
 #define LM32_EBA_RESET               0
@@ -308,6 +320,7 @@ typedef struct {
     char*               save_fname;
     bool                load_state_file;
     bool                save_state_file;
+    bool                gdb_run;
 } lm32_config_t;
 
 #endif

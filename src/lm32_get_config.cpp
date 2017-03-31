@@ -22,7 +22,7 @@
 // You should have received a copy of the GNU General Public License
 // along with cpumico32. If not, see <http://www.gnu.org/licenses/>.
 //
-// $Id: lm32_get_config.cpp,v 3.3 2017/03/09 15:35:46 simon Exp $
+// $Id: lm32_get_config.cpp,v 3.4 2017/03/31 11:48:39 simon Exp $
 // $Source: /home/simon/CVS/src/cpu/mico32/src/lm32_get_config.cpp,v $
 //
 //=============================================================
@@ -59,13 +59,21 @@ extern int optind;
 #  ifdef LM32_FAST_COMPILE
 #   define LM32_GETOPT_ARG_STR "l:r:R:DIc:i:s:SL"
 #  else
-#   define LM32_GETOPT_ARG_STR "l:n:vxb:dr:R:DIc:w:i:V:s:SL"
+#   if !(defined(_WIN32) || defined(_WIN64))
+#    define LM32_GETOPT_ARG_STR "gl:n:vxb:dr:R:DIc:w:i:V:s:SL"
+#   else
+#    define LM32_GETOPT_ARG_STR "l:n:vxb:dr:R:DIc:w:i:V:s:SL"
+#   endif
 #  endif
 # else
 #  ifdef LM32_FAST_COMPILE
 #   define LM32_GETOPT_ARG_STR "l:f:m:o:r:R:DIe:c:i:T"
 #  else
-#   define LM32_GETOPT_ARG_STR "l:f:n:vxb:dm:o:r:R:DIe:c:w:i:T"
+#   if !(defined(_WIN32) || defined(_WIN64))
+#    define LM32_GETOPT_ARG_STR "gl:f:n:vxb:dm:o:r:R:DIe:c:w:i:T"
+#   else
+#    define LM32_GETOPT_ARG_STR "l:f:n:vxb:dm:o:r:R:DIe:c:w:i:T"
+#   endif
 #  endif
 #endif
 
@@ -225,6 +233,7 @@ extern "C" lm32_config_t* lm32_get_config(int argc, char** argv, const char* def
     lm32_cpu_cfg.save_fname                      = (char*)LM32_SAVE_FILE_NAME;
     lm32_cpu_cfg.save_state_file                 = false;
     lm32_cpu_cfg.load_state_file                 = false;
+    lm32_cpu_cfg.gdb_run                         = false;
 
     lm32_cpu_cfg.dcache_cfg.cache_base_addr      = LM32_CACHE_DEFAULT_BASE;
     lm32_cpu_cfg.dcache_cfg.cache_limit          = LM32_CACHE_DEFAULT_DLIMIT;
@@ -253,6 +262,9 @@ extern "C" lm32_config_t* lm32_get_config(int argc, char** argv, const char* def
             fprintf(stderr,
                     "Usage: %s "
 #ifndef LM32_FAST_COMPILE
+#if !(defined(_WIN32) || defined(_WIN64))
+                    "[-g] "
+#endif
                     "[-v] [-x] [-d] "
 #endif
                     "[-D] [-I] "
@@ -283,6 +295,9 @@ extern "C" lm32_config_t* lm32_get_config(int argc, char** argv, const char* def
 #endif
                     "\n\n"
 #ifndef LM32_FAST_COMPILE
+#if !(defined(_WIN32) || defined(_WIN64))
+                    "    -g Start up in GDB remote debug mode (default: off)\n"
+#endif
                     "    -n Specify number of instructions to run (default: run forever)\n"
                     "    -b Specify address for breakpoint (default: none)\n"
 #endif
@@ -570,6 +585,9 @@ extern "C" lm32_config_t* lm32_get_config(int argc, char** argv, const char* def
             lm32_cpu_cfg.dump_registers = 1;
             break;
 #ifndef LM32_FAST_COMPILE
+        case 'g':
+            lm32_cpu_cfg.gdb_run = true;
+            break;
         case 'n':
             lm32_cpu_cfg.num_run_instructions = strtol(optarg, NULL, 0);
             if (lm32_cpu_cfg.num_run_instructions < LM32_FOREVER)
