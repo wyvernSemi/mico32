@@ -21,7 +21,7 @@
 // You should have received a copy of the GNU General Public License
 // along with cpumico32. If not, see <http://www.gnu.org/licenses/>.
 //
-// $Id: lm32_cpu_hdr.h,v 3.1 2017/03/31 11:48:39 simon Exp $
+// $Id: lm32_cpu_hdr.h,v 3.2 2017/04/05 12:43:36 simon Exp $
 // $Source: /home/simon/CVS/src/cpu/mico32/src/lm32_cpu_hdr.h,v $
 //
 //=============================================================
@@ -218,6 +218,8 @@
 
 #define LM32_EXT_TERMINATE_REQ       -1
 
+#define LM32_DEFAULT_COM_PORT        6
+
 #define PF_X            0x1             /* Executable. */
 #define PF_W            0x2             /* Writable. */
 #define PF_R            0x4             /* Readable. */
@@ -321,6 +323,7 @@ typedef struct {
     bool                load_state_file;
     bool                save_state_file;
     bool                gdb_run;
+    int                 com_port_num;
 } lm32_config_t;
 
 #endif

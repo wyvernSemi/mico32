@@ -1,6 +1,6 @@
 //=============================================================
 // 
-// Copyright (c) 2013-2016 Simon Southwell. All rights reserved.
+// Copyright (c) 2013-2017 Simon Southwell. All rights reserved.
 //
 // Date: 9th April 2013
 //
@@ -23,7 +23,7 @@
 // You should have received a copy of the GNU General Public License
 // along with cpumico32. If not, see <http://www.gnu.org/licenses/>.
 //
-// $Id: cpumico32.cpp,v 3.2 2017/03/31 11:48:39 simon Exp $
+// $Id: cpumico32.cpp,v 3.3 2017/04/05 12:43:36 simon Exp $
 // $Source: /home/simon/CVS/src/cpu/mico32/src/cpumico32.cpp,v $
 //
 //=============================================================
@@ -42,11 +42,7 @@
 #include "lm32_gdb.h"
 
 #if !defined _WIN32 && !defined _WIN64
-#ifdef CYGWIN
-#include <GetOpt.h>
-#else
 #include <unistd.h>
-#endif
 #else 
 extern "C" {
 extern int getopt(int nargc, char** nargv, char* ostr);
@@ -207,18 +203,15 @@ int main (int argc, char** argv)
                  rtn_status == LM32_SINGLE_STEP_BREAK   || rtn_status == LM32_TICK_BREAK ||
                  rtn_status == LM32_RESET_BREAK);
     }
-
-#if !(defined(_WIN32) || defined(_WIN64) || defined(__CYGWIN__))
     else
     {
         // Start procssing commands from GDB
-        if (process_gdb(cpu))
+        if (lm32gdb_process_gdb(cpu, p_cfg->com_port_num))
         {
             fprintf(stderr, "***ERROR in opening PTY\n");
             return -1;
         }
     }
-#endif
 
     // Dump registers after completion, if specified to do so
     if (p_cfg->dump_registers)

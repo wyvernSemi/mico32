@@ -19,7 +19,7 @@
 // You should have received a copy of the GNU General Public License
 // along with cpumico32. If not, see <http://www.gnu.org/licenses/>.
 //
-// $Id: lm32_gdb.h,v 3.1 2017/03/31 11:48:52 simon Exp $
+// $Id: lm32_gdb.h,v 3.2 2017/04/05 12:43:36 simon Exp $
 // $Source: /home/simon/CVS/src/cpu/mico32/src/lm32_gdb.h,v $
 //
 //=============================================================
@@ -27,31 +27,43 @@
 #ifndef _LM32_GDB_H_
 #define _LM32_GDB_H_
 
-#if !(defined(_WIN32) || defined(_WIN64) || defined (CYGWIN))
-
 // -------------------------------------------------------------------------
 // INCLUDES
 // -------------------------------------------------------------------------
 
-#include <termios.h>
 #include "lm32_cpu.h"
 
 // -------------------------------------------------------------------------
 // DEFINES
 // -------------------------------------------------------------------------
 
+#if !(defined(_WIN32) || defined(_WIN64))
+
+#include <termios.h>
+# define BAUDRATE             B19200
+# define PTY_MASTER_DEVICE    "/dev/ptmx"
+# define PTY_HDL              int
+#else
+// Map some signals undefined in windows to linux values
+# define SIGTRAP              5
+# define SIGHUP               1
+
+# define BAUDRATE             CBR_19200
+# define PTY_MASTER_DEVICE    LM32_DEFAULT_COM_PORT
+# define PTY_HDL              HANDLE
+#endif
+
 #define LM32GDB_OK            0
 #define LM32GDB_ERR           -1
 
 #define IP_BUFFER_SIZE        (64*1024)
 #define OP_BUFFER_SIZE        1024
-#define BAUDRATE              B19200
-#define PTY_MASTER_DEVICE     "/dev/ptmx"
 #define PTY_ERROR             LM32GDB_ERR
 #define GDB_ACK_CHAR          '+'
 #define GDB_NAK_CHAR          '-'
 #define GDB_SOP_CHAR          '$'
 #define GDB_EOP_CHAR          '#'
+#define GDB_MEM_DELIM_CHAR    ':'
 #define GDB_BIN_ESC           0x7d
 #define GDB_BIN_XOR_VAL       0x20
 #define HEX_CHAR_MAP          {'0', '1', '2', '3', \
@@ -107,7 +119,10 @@ enum lm32gdb_regs_e
   NUM_REGS
 };
 
-extern int process_gdb (lm32_cpu* cpu);
+// -------------------------------------------------------------------------
+// PUBLIC PROTOTYPES
+// -------------------------------------------------------------------------
 
-#endif
+extern int lm32gdb_process_gdb (lm32_cpu* cpu, int port_num = LM32_DEFAULT_COM_PORT);
+
 #endif   

@@ -1,10 +1,10 @@
 
 [Setup]
 AppName                 = CPUMICO32
-AppVerName              = CPUMICO32_3_0_6
+AppVerName              = CPUMICO32_3_0_7
 DefaultDirName          = {pf}\mico32
 DisableProgramGroupPage = yes
-OutputBaseFilename      = setup_cpumico32_3_0_6
+OutputBaseFilename      = setup_cpumico32_3_0_7
 
 [Dirs]
 Name: "{app}\obj"

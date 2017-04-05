@@ -22,7 +22,7 @@
 // You should have received a copy of the GNU General Public License
 // along with cpumico32. If not, see <http://www.gnu.org/licenses/>.
 //
-// $Id: lm32_cpu.cpp,v 3.7 2017/03/31 11:48:39 simon Exp $
+// $Id: lm32_cpu.cpp,v 3.8 2017/04/05 12:43:36 simon Exp $
 // $Source: /home/simon/CVS/src/cpu/mico32/src/lm32_cpu.cpp,v $
 //
 //=============================================================
@@ -387,7 +387,7 @@ uint32_t lm32_cpu::lm32_read_mem (const uint32_t byte_addr_raw, const int type)
     // Make sure we have some memory
     if (mem == NULL) 
     {
-         if ((mem = (uint8_t *)malloc(num_mem_bytes/sizeof(uint8_t))) == NULL)          //LCOV_EXCL_LINE
+         if ((mem = (uint8_t *)lm32_alloc_mem(num_mem_bytes/sizeof(uint8_t))) == NULL)          //LCOV_EXCL_LINE
          {
             fprintf(stderr, "***ERROR: memory allocation failure\n");                   //LCOV_EXCL_LINE
             exit(LM32_INTERNAL_ERROR);                                                  //LCOV_EXCL_LINE
@@ -591,7 +591,7 @@ void lm32_cpu::lm32_write_mem(const uint32_t byte_addr_raw, const uint32_t data,
     // Make sure we have some memory
     if (mem == NULL) 
     {
-         if ((mem = (uint8_t *)malloc(num_mem_bytes/sizeof(uint8_t))) == NULL)          //LCOV_EXCL_LINE
+         if ((mem = (uint8_t *)lm32_alloc_mem(num_mem_bytes/sizeof(uint8_t))) == NULL)          //LCOV_EXCL_LINE
          {
             fprintf(stderr, "***ERROR: memory allocation failure\n");                   //LCOV_EXCL_LINE
             exit(LM32_INTERNAL_ERROR);                                                  //LCOV_EXCL_LINE
@@ -1060,7 +1060,7 @@ int lm32_cpu::lm32_run_program (const char* filename, const lm32_time_t cycles, 
     // Make sure we have some memory
     if (mem == NULL) 
     {
-         if ((mem = (uint8_t *)malloc(num_mem_bytes/sizeof(uint8_t))) == NULL)
+         if ((mem = (uint8_t *)lm32_alloc_mem(num_mem_bytes/sizeof(uint8_t))) == NULL)
          {
             fprintf(stderr, "***ERROR: memory allocation failure\n");                   //LCOV_EXCL_LINE
             exit(LM32_INTERNAL_ERROR);                                                  //LCOV_EXCL_LINE

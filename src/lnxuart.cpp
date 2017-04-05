@@ -21,7 +21,7 @@
 // You should have received a copy of the GNU General Public License
 // along with lnxmico32. If not, see <http://www.gnu.org/licenses/>.
 //
-// $Id: lnxuart.cpp,v 3.1 2016/09/22 08:52:40 simon Exp $
+// $Id: lnxuart.cpp,v 3.2 2017/04/05 12:43:36 simon Exp $
 // $Source: /home/simon/CVS/src/cpu/mico32/src/lnxuart.cpp,v $
 //
 //=============================================================
@@ -169,7 +169,7 @@ void lm32_uart_write(const uint32_t address, const uint32_t data, const int cntx
         // Print the character
         LM32_OUTPUT_TTY(data & LM32_UART_RBR_WR_MASK);
 
-#ifdef CYGWIN
+#ifdef __CYGWIN__
         // Flush the output. When compiling with optimisations under Cygwin, not all
         // relevant output makes it to the screen consistently without it.
         fflush(stdout);

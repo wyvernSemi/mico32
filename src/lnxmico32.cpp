@@ -1,6 +1,6 @@
 //=============================================================
 // 
-// Copyright (c) 2016 Simon Southwell. All rights reserved.
+// Copyright (c) 2016 - 2017 Simon Southwell. All rights reserved.
 //
 // Date: 24th August 2016
 //
@@ -21,7 +21,7 @@
 // You should have received a copy of the GNU General Public License
 // along with lnxmico32. If not, see <http://www.gnu.org/licenses/>.
 //
-// $Id: lnxmico32.cpp,v 3.3 2017/03/31 11:48:39 simon Exp $
+// $Id: lnxmico32.cpp,v 3.4 2017/04/05 12:43:36 simon Exp $
 // $Source: /home/simon/CVS/src/cpu/mico32/src/lnxmico32.cpp,v $
 //
 //=============================================================
@@ -36,11 +36,7 @@
 #include <stdint.h>
 
 #if !(defined _WIN32) && !(defined _WIN64)
-#ifdef CYGWIN
-#include <GetOpt.h>
-#else
 #include <unistd.h>
-#endif
 #include <termios.h>
 #include <sys/time.h>
 #else 
@@ -65,7 +61,7 @@ extern char* optarg;
 #define LM32_MEM_WR_PAGE_BITS 10
 #define LM32_MEM_WR_BUF_SIZE (LM32_RAM_SIZE/(1 << LM32_MEM_WR_PAGE_BITS))
 
-#if !(defined _WIN32) && !(defined _WIN64) && !(defined CYGWIN)
+#if !(defined _WIN32) && !(defined _WIN64)
 #define LM32_TIME_PRINT_STR "%ld"
 #else
 #define LM32_TIME_PRINT_STR "%lld"
@@ -179,7 +175,7 @@ static const uint8_t trail_config[LM32_TRL_CONFIG_LEN] = {
 };
 
 static double tv_diff;
-#if !(defined _WIN32) && !(defined _WIN64)
+#if (!(defined _WIN32) && !(defined _WIN64)) || defined __CYGWIN__
 static struct timeval tv_start, tv_stop;
 
 #else
@@ -192,7 +188,7 @@ LARGE_INTEGER freq, start, stop;
 
 static void pre_run_setup()
 {
-#if !(defined _WIN32) && !(defined _WIN64)
+#if (!(defined _WIN32) && !(defined _WIN64)) || defined __CYGWIN__
     // For non-windows systems, turn off echoing of input key presses
     struct termios t;
 
@@ -211,7 +207,7 @@ static void pre_run_setup()
 
 static void post_run_setup()
 {
-#if !(defined _WIN32) && !(defined _WIN64)
+#if (!(defined _WIN32) && !(defined _WIN64)) || defined __CYGWIN__
     // For non-windows systems, turn off echoing of input key presses
     struct termios t;
 
@@ -630,6 +626,7 @@ int main (int argc, char** argv)
     cpu->lm32_register_ext_mem_callback(ext_mem_access);
     cpu->lm32_register_int_callback(ext_interrupt);
 
+    // Not a debug run , so run the Linux boot
     if (!p_cfg->gdb_run)
     {
         // Load vmlinux.bin
@@ -671,17 +668,16 @@ int main (int argc, char** argv)
         // Turn key input echoing back on
         post_run_setup();
     }
-#if !(defined(_WIN32) || defined(_WIN64) || defined (__CYGWIN__))
+    // Run a debug session
     else
     {
         // Start procssing commands from GDB
-        if (process_gdb(cpu))
+        if (lm32gdb_process_gdb(cpu, p_cfg->com_port_num))
         {
             fprintf(stderr, "***ERROR in opening PTY\n");
             return -1;
         }
     }
-#endif
 
     // Dump registers after completion, if specified to do so
     if (p_cfg->dump_registers)

@@ -21,7 +21,7 @@
 # You should have received a copy of the GNU General Public License
 # along with cpumico32. If not, see <http://www.gnu.org/licenses/>.
 #
-# $Id: makefile,v 3.1 2017/03/31 11:47:30 simon Exp $
+# $Id: makefile,v 3.2 2017/04/05 12:38:46 simon Exp $
 # $Source: /home/simon/CVS/src/cpu/mico32/makefile,v $
 # 
 ##########################################################
@@ -49,11 +49,7 @@ LIBTARGET=${LIBBASENAME}.a
 LIBSOTARGET=${LIBBASENAME}.so
 
 LIBOBJS=lm32_cpu.o lm32_cpu_inst.o lm32_cpu_elf.o lm32_cpu_disassembler.o lm32_cpu_c.o lm32_cache.o
-OBJECTS=${TARGET}.o lm32_get_config.o
-
-ifneq (${OSTYPE}, Cygwin)
-OBJECTS += lm32_gdb.o
-endif
+OBJECTS=${TARGET}.o lm32_get_config.o lm32_gdb.o
 
 LCOVINFO=lm32.info
 COVLOGFILE=cov.log
@@ -67,9 +63,9 @@ CC=g++
 CC_C=gcc
 
 # GCC in CYGWIN gives tedious warnings that all code is relocatable, and 
-# so -fPIC not required. So shut it up.
+# so -fPIC not required. So shut it up. Also define _GNU_SOURCE for tty code.
 ifeq (${OSTYPE}, Cygwin)
-  COPTS=-g
+  COPTS=-g -D_GNU_SOURCE 
 else
   COPTS=-g -fPIC
 endif
@@ -92,10 +88,7 @@ ${OBJDIR}/lm32_cpu_inst.o         : ${SRCDIR}/lm32_cpu.h     ${SRCDIR}/lm32_cpu_
 ${OBJDIR}/lm32_cache.o            : ${SRCDIR}/lm32_cpu_hdr.h ${SRCDIR}/lm32_cache.cpp ${SRCDIR}/lm32_cache.h
 ${OBJDIR}/lm32_cpu_disassembler.o : ${SRCDIR}/lm32_cpu.h     ${SRCDIR}/lm32_cpu_hdr.h ${SRCDIR}/lm32_cpu_mico32.h ${SRCDIR}/lm32_cpu_disassembler.cpp
 ${OBJDIR}/lm32_cpu_c.o            : ${SRCDIR}/lm32_cpu.h     ${SRCDIR}/lm32_cpu_hdr.h ${SRCDIR}/lm32_cpu.h ${SRCDIR}/lm32_cpu_c.cpp ${SRCDIR}/lm32_cpu_c.h
-
-ifneq (${OSTYPE}, Cygwin)
 ${OBJDIR}/lm32_gdb.o              : ${SRCDIR}/lm32_cpu.h     ${SRCDIR}/lm32_cpu_hdr.h ${SRCDIR}/lm32_gdb.cpp ${SRCDIR}/lm32_gdb.h
-endif
 
 ##########################################################
 # Compilation rules

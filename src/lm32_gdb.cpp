@@ -19,7 +19,7 @@
 // You should have received a copy of the GNU General Public License
 // along with cpumico32. If not, see <http://www.gnu.org/licenses/>.
 //
-// $Id: lm32_gdb.cpp,v 3.1 2017/03/31 11:48:52 simon Exp $
+// $Id: lm32_gdb.cpp,v 3.2 2017/04/05 12:43:36 simon Exp $
 // $Source: /home/simon/CVS/src/cpu/mico32/src/lm32_gdb.cpp,v $
 //
 //=============================================================
@@ -30,11 +30,16 @@
 
 #include <stdio.h>
 #include <stdlib.h>
-#include <fcntl.h>
-#include <termios.h>
-#include <unistd.h>
 #include <signal.h>
 #include <errno.h>
+#include <fcntl.h>
+
+#if (!defined(_WIN32) && !defined(_WIN64)) || defined __CYGWIN__
+#include <termios.h>
+#include <unistd.h>
+#else
+#include <windows.h>
+#endif
 
 #include "lm32_gdb.h"
 #include "lm32_cpu.h"
@@ -43,8 +48,8 @@
 // LOCAL CONSTANTS
 // -------------------------------------------------------------------------
 
-const static char ack_char       = GDB_ACK_CHAR;
-const static char hexchars[]     = HEX_CHAR_MAP;
+static char ack_char       = GDB_ACK_CHAR;
+static char hexchars[]     = HEX_CHAR_MAP;
 
 // -------------------------------------------------------------------------
 // STATIC VARIABLES
@@ -54,9 +59,80 @@ static char ip_buf[IP_BUFFER_SIZE];
 static char op_buf[OP_BUFFER_SIZE];
 
 // -------------------------------------------------------------------------
+// lm32gdb_read()
+//
+// Read a byte from the PTY (fd) and place in the buffer (buf). Return true
+// on successful read, else return false. Compile dependent for windows
+// (ReadFile) and linux (read)
+//
 // -------------------------------------------------------------------------
 
-static int gen_register_reply(lm32_cpu* cpu, const char* cmd, char *buf, unsigned char &checksum, const int sigval = SIGHUP)
+inline bool lm32gdb_read (PTY_HDL fd, char* buf)
+{
+
+#if !(defined(_WIN32) || defined(_WIN64))
+    int status = read(fd, buf, 1);
+
+    return (status == 1);
+#else
+    unsigned long status;
+
+    if (!ReadFile(fd, buf, 1, &status, NULL))
+    {
+        fprintf(stderr, "ReadFile returned an error %d\n", GetLastError());
+        return false;
+    }
+
+    return true;
+#endif
+}
+
+// -------------------------------------------------------------------------
+// lm32gdb_write()
+//
+// Write a byte to the PTY (fd) from the buffer (buf). Return true
+// on successful read, else return false. Compile dependent for windows
+// (WriteFile) and linux (write)
+//
+// -------------------------------------------------------------------------
+
+inline bool lm32gdb_write (PTY_HDL fd, char* buf)
+{
+#if !(defined(_WIN32) || defined(_WIN64))
+    int status = write(fd, buf, 1);
+
+    return (status != -1);
+#else
+    unsigned long status;
+
+    if (!WriteFile(fd, buf, 1, &status, NULL))
+    {
+        fprintf(stderr, "WriteFile returned an error %d\n", GetLastError());
+        return false;
+    }
+
+    return true;
+#endif
+}
+
+// -------------------------------------------------------------------------
+// lm32gdb_gen_register_reply()
+//
+// Generate a register reply to a GDB command into buffer (buf). The format
+// generated is either a stop reply type (for commands '?', 'c' or 's')
+//
+//   "T AA n1:r1;n2:r2;..."
+//
+// or an orders set replay (for command 'p')
+//
+//   "r1r2r3...."
+//
+// The checksum for the generated characters is calculated and returned in
+// checksum.
+//
+// -------------------------------------------------------------------------
+
+static int lm32gdb_gen_register_reply(lm32_cpu* cpu, const char* cmd, char *buf, unsigned char &checksum, const int sigval = SIGHUP)
 {
     int      bdx    = 0;
     int      cdx    = 1;
@@ -117,7 +193,7 @@ static int gen_register_reply(lm32_cpu* cpu, const char* cmd, char *buf, unsigne
         }
         else if (single_reg)
         {
-            if (idx != single_reg)
+            if (idx != regnum)
             {
                 continue;
             }
@@ -147,9 +223,16 @@ static int gen_register_reply(lm32_cpu* cpu, const char* cmd, char *buf, unsigne
 }
 
 // -------------------------------------------------------------------------
+// lm32gdb_set_registers()
+//
+// Sets one or more of the CPU's registers based on the command (cmd). If
+// the command is 'P', a register number is extracted, and that register is 
+// updated with the command data. Otherwise the command data is treated as
+// an ordered list ("r1r2r3...."),
+//
 // -------------------------------------------------------------------------
 
-static int set_regs (lm32_cpu* cpu, const char* cmd, const int cmdlen, char* buf, unsigned char &checksum)
+static int lm32gdb_set_regs (lm32_cpu* cpu, const char* cmd, const int cmdlen, char* buf, unsigned char &checksum)
 {
     int bdx        = 0;
     int cdx        = 1;
@@ -178,9 +261,12 @@ static int set_regs (lm32_cpu* cpu, const char* cmd, const int cmdlen, char* buf
     {
         int val = 0;
 
-        // Convert the two character hex value to a number
-        val  = CHAR2NIB(cmd[cdx]) << 4; cdx++;
-        val |= CHAR2NIB(cmd[cdx]);      cdx++;
+        // Convert the 8 character (for 32 bits) hex nibbles to a number
+        for (int cdx = 0; cdx < 4*2; cdx++)
+        {
+            val  <<= 4;
+            val |= CHAR2NIB(cmd[cdx]); cdx++;
+        }
 
         // Update the general purpose registers in the retrieved state structure
         if (rdx < LM32_NUM_OF_REGISTERS)
@@ -212,9 +298,21 @@ static int set_regs (lm32_cpu* cpu, const char* cmd, const int cmdlen, char* buf
 }
 
 // -------------------------------------------------------------------------
+// lm32gdb_read_mem()
+//
+// Read from cpu memory in reply to a read type command (in cmd), and place
+// reply in buf. Format of the command is
+//
+//   M addr,length
+//
+// Reply format is 'XX...', as set of hex character pairs for each byte, for
+// as many as specified in length, starting from addr in memory. The 
+// checksum is calculated for the returned characters, and returned in
+// checksum.
+//
 // -------------------------------------------------------------------------
 
-static int read_mem(lm32_cpu* cpu, const char* cmd, const int cmdlen, char *buf, unsigned char &checksum)
+static int lm32gdb_read_mem(lm32_cpu* cpu, const char* cmd, const int cmdlen, char *buf, unsigned char &checksum)
 {
     int      bdx  = 0;
     int      cdx  = 0;
@@ -244,28 +342,44 @@ static int read_mem(lm32_cpu* cpu, const char* cmd, const int cmdlen, char *buf,
     }
 
     // Get memory bytes and put values as hex characters in buffer
-    for (int idx = 0; idx < len; idx++)
+    for (unsigned idx = 0; idx < len; idx++)
     {
         unsigned val = cpu->lm32_read_mem(addr++, LM32_MEM_RD_ACCESS_BYTE);
         
         checksum += buf[bdx++] = HIHEXCHAR(val);
         checksum += buf[bdx++] = LOHEXCHAR(val);
-
-        //fprintf(stderr, "read_mem: addr = 0x%08x len = %d val = 0x%02x\n", addr, len, val);
     }
 
     return bdx;
 }
 
 // -------------------------------------------------------------------------
+// lm32gdb_write_mem()
+//
+// Write to cpu memory in reply to a write type command (in cmd), and place
+// a reply in buf. Format of the command is
+//
+//   M addr,length:XX...
+//
+// Where XX... is a set of hex character pairs for each byte to be written,
+// for length bytes, starting at addr. The data may be in binary format
+// (flagged by is_binary), in which case the XX data are single raw bytes,
+// some of which are 'escaped' (see commants in function). As the memory
+// write command's data can be large, the passed in cmd buffer does not 
+// contain the data after the ':' delimiter. This is read directly from
+// the serial port and placed into the cpu's memory. A reply is placed in
+// buf ("OK", or "EIO" if an error), with a calculated checksum returned
+// in checksum.
+//
 // -------------------------------------------------------------------------
 
-static int write_mem (lm32_cpu* cpu, const char* cmd, const int cmdlen, char *buf, unsigned char &checksum, const bool is_binary = false)
+static int lm32gdb_write_mem (const PTY_HDL fd, lm32_cpu* cpu, const char* cmd, const int cmdlen, char *buf, unsigned char &checksum, const bool is_binary = false)
 {
-    int      bdx  = 0;
-    int      cdx  = 0;
-    unsigned addr = 0;
-    unsigned len  = 0;
+    int      bdx          = 0;
+    int      cdx          = 0;
+    unsigned addr         = 0;
+    unsigned len          = 0;
+    bool     io_status_ok = true;
 
     // Skip command character
     cdx++;
@@ -293,46 +407,82 @@ static int write_mem (lm32_cpu* cpu, const char* cmd, const int cmdlen, char *bu
     cdx++;
 
     // Get hex characters byte values and put into memory
-    for (int idx = 0; idx < len && cdx < cmdlen; idx++)
+    for (unsigned int idx = 0; idx < len; idx++)
     {
         int val;
+        char ipbyte[2];
 
         if (is_binary)
         {
-            val = cmd[cdx++];
+            io_status_ok |= lm32gdb_read(fd, ipbyte);
+
+            val = ipbyte[0];
             
             // Some binary data is escaped (with '}' character) and the following is the data 
             // XORed with a pattern (0x20). '#', '$', and '}' are all escaped. Replies
             // containing '*' (0x2a) must be escaped. See 'Debugging with GDB' manual, Appendix E.1
             if (val == GDB_BIN_ESC)
             {
-                val = cmd[cdx++] ^ GDB_BIN_XOR_VAL;
+                io_status_ok |= lm32gdb_read(fd, ipbyte);
+                
+                val = ipbyte[0] ^ GDB_BIN_XOR_VAL;
             }
         }
         else
         {
+            io_status_ok |= lm32gdb_read(fd, &ipbyte[0]);
+            io_status_ok |= lm32gdb_read(fd, &ipbyte[1]);
+
             // Get byte value from hex
-            val  = CHAR2NIB(cmd[cdx]) << 4; cdx++;
-            val |= CHAR2NIB(cmd[cdx]);      cdx++;
+            val  = CHAR2NIB(ipbyte[0]) << 4;
+            val |= CHAR2NIB(ipbyte[1]);
         }
 
-        //fprintf(stderr, "WR%04x (%d, %d): 0x%02x\n", addr, len, cmdlen, val);
+        if (io_status_ok)
+        {
+            // Write byte to memory (don't update cycle count)
+            cpu->lm32_write_mem(addr++, val, LM32_MEM_WR_ACCESS_BYTE, true);
+#ifdef LM32GDB_DEBUG
+            fprintf(stderr, "%02X", val & 0xff);
+#endif
 
-        // Write byte to memory (don't update cycle count)
-        cpu->lm32_write_mem(addr++, val, LM32_MEM_WR_ACCESS_BYTE, true);
+        }
+        else
+        {
+            // On an error, break out of the loop
+            break;
+        }
     }
 
     // Acknowledge the command
-    BUFOK(buf, bdx, checksum);
+    if (io_status_ok)
+    {
+        BUFOK(buf, bdx, checksum);
+    }
+    else
+    {
+        BUFERR(EIO, buf, bdx, checksum);
+    }
 
     return bdx;
 }
 
-
 // -------------------------------------------------------------------------
+// lm32gdb_set_hw_bp()
+//
+// Sets a hardware breakpoint using the CPU's hardware breakpoint registers,
+// as specified in the command (cmd). The command format is
+//
+//   Z1,addr,kind
+//
+// For the lm32, kind is always 4. A free hardware breakpoint is searched
+// for in the BP registers, starting at BP0 and working up. When a free
+// register is found it is updated with addr, activated, and LM32GDB_OK
+// returned. If no free BP is found LM32GDB_ERR is returned.
+//
 // -------------------------------------------------------------------------
 
-static int set_hw_bp (lm32_cpu* cpu, const char *cmd)
+static int lm32gdb_set_hw_bp (lm32_cpu* cpu, const char *cmd)
 {
     uint32_t *bp;
     unsigned cdx  = 3;
@@ -374,8 +524,6 @@ static int set_hw_bp (lm32_cpu* cpu, const char *cmd)
     // Add the breakpoint address to the selected register, and mark as active 
     *bp = (addr & 0xfffffffc) | 0x00000001;
 
-    //fprintf(stderr, "BP: 0x%08x\n", cpu_state.bp0);
-
     // Write back the updated CPU state
     cpu->lm32_set_cpu_state(cpu_state);
 
@@ -383,9 +531,22 @@ static int set_hw_bp (lm32_cpu* cpu, const char *cmd)
 }
 
 // -------------------------------------------------------------------------
+// lm32gdb_clear_hw_bp()
+//
+// Clears a hardware breakpoint from the CPU's hardware breakpoint registers,
+// as specified in the command (cmd). The command format is
+//
+//   z1,addr,kind
+//
+// For the lm32, kind is always 4. A hardware breakpoint is searched for,
+// in the BP registers, that is active and matches addr, starting at BP0 
+// and working up. When a matching register is found it is set to 0, and 
+// deactivated, and LM32GDB_OK returned. If no matching BP is found 
+// LM32GDB_ERR is returned.
+// 
 // -------------------------------------------------------------------------
 
-static int clear_hw_bp (lm32_cpu* cpu, const char* cmd)
+static int lm32gdb_clear_hw_bp (lm32_cpu* cpu, const char* cmd)
 {
     uint32_t *bp;
     unsigned cdx  = 3;
@@ -435,9 +596,24 @@ static int clear_hw_bp (lm32_cpu* cpu, const char* cmd)
 }
 
 // -------------------------------------------------------------------------
+// lm32gdb_set_hw_wp()
+//
+// Sets a hardware watchpoint using the CPU's hardware breakpoint registers,
+// as specified in the command (cmd). The command format is
+//
+//   Zn,addr,kind
+//
+// where n is one of 2, 3 or 4 for writes, reads or both. For the lm32, kind
+// is always 4. A free hardware watchpoint is searched for in the DC 
+// register's C[0:3] fields, starting at C0 and working up.  When a free
+// watchpoint is found the DC field is updated with the relevant state,
+// depending on the command's 'n' value, the associated watchpoint register
+// (WP[0:3]) is updated with the addr value, and LM32GDB_OK returned. If no
+// free WP is found LM32GDB_ERR is returned.
+//
 // -------------------------------------------------------------------------
 
-static int set_hw_wp (lm32_cpu* cpu, const char *cmd)
+static int lm32gdb_set_hw_wp (lm32_cpu* cpu, const char *cmd)
 {
     unsigned wp_type;
     unsigned cdx      = 1;
@@ -506,10 +682,25 @@ static int set_hw_wp (lm32_cpu* cpu, const char *cmd)
     return LM32GDB_OK;
 }
 
+
 // -------------------------------------------------------------------------
+// lm32gdb_clear_hw_wp()
+//
+// Clears a hardware watchpoint from the CPU's hardware breakpoint
+// registers, as specified in the command (cmd). The command format is
+//
+//   zn,addr,kind
+//
+// where n is one of 2, 3 or 4 for writes, reads or both. For the lm32, kind
+// is always 4. A matching hardware watchpoint is searched for in the DC 
+// register's C[0:3] fields (against the command's 'n' value) and the WP
+// registers, starting at C0/WP0 and working up. When a matching watchpoint
+// is found, the DC field is set to be disabled and LM32GDB_OK returned. If
+// no matching WP is found LM32GDB_ERR is returned.
+//
 // -------------------------------------------------------------------------
 
-static int clear_hw_wp (lm32_cpu* cpu, const char *cmd)
+static int lm32gdb_clear_hw_wp (lm32_cpu* cpu, const char *cmd)
 {
     unsigned wp_type;
     unsigned cdx      = 1;
@@ -571,9 +762,24 @@ static int clear_hw_wp (lm32_cpu* cpu, const char *cmd)
 }
 
 // -------------------------------------------------------------------------
+// lm32gdb_run_cpu()
+//
+// Executes the CPU dependent on the particular GDB command (cmd)---either
+// continue (c) or single step (s). The default is to run from the current
+// PC value, but the command can have an optional address which, if present
+// updates the PC value before execution. The cpu's lm32_run_program()
+// method is called with the relevant type, which executes until returning
+// with a  termination 'reason' value. The LM32 reason is mapped to a
+// signal type and, for break- and watchpoints, the interrupt flags cleared.
+// The signal is then returned.
+//
+// Note that the CPU internal int_flags state for BPs and WPs is cleared
+// here *before* the CPU can act upon it, allowing non-intrusive debugging,
+// and obviating the need for handlers in the code being debugged.
+//
 // -------------------------------------------------------------------------
 
-static int run_cpu (lm32_cpu* cpu, const char* cmd, const int cmdlen, const int type)
+static int lm32gdb_run_cpu (lm32_cpu* cpu, const char* cmd, const int cmdlen, const int type)
 {
     int  status;
     int  reason      = SIGHUP;
@@ -584,7 +790,7 @@ static int run_cpu (lm32_cpu* cpu, const char* cmd, const int cmdlen, const int 
     // If there's an address, fetch it and update PC
     if (cmdlen > 1)
     {
-        unsigned cdx = 1;
+        int cdx = 1;
 
         // Retrieve the current CPU state
         cpu_state = cpu->lm32_get_cpu_state();
@@ -645,9 +851,18 @@ static int run_cpu (lm32_cpu* cpu, const char* cmd, const int cmdlen, const int 
 }
 
 // -------------------------------------------------------------------------
+// lm32gdb_proc_hw_bp()
+//
+// Processes hardware breakpoint (and watchpoint) commands, as passed in
+// in cmd. The relevent set/clear bp/wp  function is selected, and the
+// returned status inspected. A replay is generated and placed in op_buf
+// with either "OK" for a good status, or "Enn" for a bad status (with
+// nn being the hex characters for ENOSPC---no space). The replay checksum
+// is returned in checksum.
+//
 // -------------------------------------------------------------------------
 
-static int proc_hw_bp(lm32_cpu* cpu, const char* cmd, char* op_buf,  unsigned char &checksum)
+static int lm32gdb_proc_hw_bp(lm32_cpu* cpu, const char* cmd, char* op_buf,  unsigned char &checksum)
 {
     int op_idx = 0;
 
@@ -657,7 +872,7 @@ static int proc_hw_bp(lm32_cpu* cpu, const char* cmd, char* op_buf,  unsigned ch
     if (cmd[1] == '1')
     {
         // Set free hardware breakpoint or clear matching and active h/w breakpoint
-        int status = clear_not_set ? clear_hw_bp(cpu, cmd) : set_hw_bp(cpu, cmd);
+        int status = clear_not_set ? lm32gdb_clear_hw_bp(cpu, cmd) : lm32gdb_set_hw_bp(cpu, cmd);
         
         if (status == LM32GDB_OK)
         {
@@ -674,7 +889,7 @@ static int proc_hw_bp(lm32_cpu* cpu, const char* cmd, char* op_buf,  unsigned ch
     else if (cmd[1] >= '2' && cmd[1] <= '4')
     {
         // Set free h/w watchpoint or clear matching and active h/w watchpoint
-        int status = clear_not_set ? clear_hw_wp(cpu, cmd) : set_hw_wp(cpu, cmd);
+        int status = clear_not_set ? lm32gdb_clear_hw_wp(cpu, cmd) : lm32gdb_set_hw_wp(cpu, cmd);
 
         // Find a free (inactive) h/w watchpoint, and set to address
         if (status == LM32GDB_OK)
@@ -693,16 +908,27 @@ static int proc_hw_bp(lm32_cpu* cpu, const char* cmd, char* op_buf,  unsigned ch
 }
 
 // -------------------------------------------------------------------------
+// lm32gdb_proc_gdb_cmd()
+//
+// Processes a single GDB command, as stored in cmd. The command is
+// inspected and the appropriate local functions called. Generated replies 
+// are added to op_buf, with this function bracketing these with $ and #,
+// followed by the two character checksum, returned by the functions (if 
+// any). An exception to a reply is for the kill (k) command which has
+// no reply. Unsupported commands return a default reply of "$#00".
+// The function sends the reply to the PTY (fd) and then return either
+// true if a 'detach' command (D) was seen, otherwise false.
+//
 // -------------------------------------------------------------------------
 
-static bool proc_gdb_cmd (lm32_cpu* cpu, const char* cmd, const int cmdlen, const int fd)
+static bool lm32gdb_proc_gdb_cmd (lm32_cpu* cpu, const char* cmd, const int cmdlen, const PTY_HDL fd)
 {
     int           cmd_idx   = 1;
     int           op_idx    = 0;
     unsigned char checksum  = 0;
     bool          rcvd_kill = false;
     bool          detached  = false;
-    static int    reason    = SIGHUP; // TODO: decode reasons and send correct signal
+    static int    reason    = 0;
 
     // Packet start
     op_buf[op_idx++] = GDB_SOP_CHAR;
@@ -712,50 +938,52 @@ static bool proc_gdb_cmd (lm32_cpu* cpu, const char* cmd, const int cmdlen, cons
     {
     // Reason for halt
     case '?':
-        op_idx += gen_register_reply(cpu, cmd, &op_buf[op_idx], checksum, reason);
+        op_idx += lm32gdb_gen_register_reply(cpu, cmd, &op_buf[op_idx], checksum, reason);
         break;
 
     // Read general purpose registers
     case 'g':
-        op_idx += gen_register_reply(cpu, cmd, &op_buf[op_idx], checksum);
+        op_idx += lm32gdb_gen_register_reply(cpu, cmd, &op_buf[op_idx], checksum);
         break;
 
     // Write general purpose registers
     case 'G':
         // Update registers from command
-        op_idx += set_regs(cpu, cmd, cmdlen, &op_buf[op_idx], checksum);
+        op_idx += lm32gdb_set_regs(cpu, cmd, cmdlen, &op_buf[op_idx], checksum);
         break;
 
     // Read memory 
     case 'm':
-        op_idx += read_mem(cpu, cmd, cmdlen, &op_buf[op_idx], checksum);
+        op_idx += lm32gdb_read_mem(cpu, cmd, cmdlen, &op_buf[op_idx], checksum);
         break;
 
+//#if !(defined(_WIN32) || defined(_WIN64)) && !defined (LM32GDB_DEBUG)
     // Write memory (binary)
     case 'X':
-        op_idx += write_mem(cpu, cmd, cmdlen, &op_buf[op_idx], checksum, true);
+        op_idx += lm32gdb_write_mem(fd, cpu, cmd, cmdlen, &op_buf[op_idx], checksum, true);
         break;
+//#endif
 
     // Write memory
     case 'M':
-        op_idx += write_mem(cpu, cmd, cmdlen, &op_buf[op_idx], checksum, false);
+        op_idx += lm32gdb_write_mem(fd, cpu, cmd, cmdlen, &op_buf[op_idx], checksum, false);
         break;
 
     // Continue
     case 'c':
         // Continue onwards 
-        reason = run_cpu(cpu, cmd, cmdlen, LM32_RUN_CONTINUE);
+        reason = lm32gdb_run_cpu(cpu, cmd, cmdlen, LM32_RUN_CONTINUE);
 
         // On a break, return with a stop reply packet
-        op_idx += gen_register_reply(cpu, cmd, &op_buf[op_idx], checksum, reason);
+        op_idx += lm32gdb_gen_register_reply(cpu, cmd, &op_buf[op_idx], checksum, reason);
         break;
 
     // Single step
     case 's':
-        reason = run_cpu(cpu, cmd, cmdlen, LM32_RUN_SINGLE_STEP);
+        reason = lm32gdb_run_cpu(cpu, cmd, cmdlen, LM32_RUN_SINGLE_STEP);
 
         // On a break, return with a stop reply packet
-        op_idx += gen_register_reply(cpu, cmd, &op_buf[op_idx], checksum, reason);
+        op_idx += lm32gdb_gen_register_reply(cpu, cmd, &op_buf[op_idx], checksum, reason);
         break;
 
     case 'D':
@@ -764,16 +992,16 @@ static bool proc_gdb_cmd (lm32_cpu* cpu, const char* cmd, const int cmdlen, cons
         break;
 
     case 'p':
-        op_idx += gen_register_reply(cpu, cmd, &op_buf[op_idx], checksum, reason);
+        op_idx += lm32gdb_gen_register_reply(cpu, cmd, &op_buf[op_idx], checksum, reason);
         break;
 
     case 'P':
-        op_idx += set_regs(cpu, cmd, cmdlen, &op_buf[op_idx], checksum);
+        op_idx += lm32gdb_set_regs(cpu, cmd, cmdlen, &op_buf[op_idx], checksum);
         break;
 
     case 'z':
     case 'Z':
-        op_idx += proc_hw_bp(cpu, cmd, &op_buf[op_idx], checksum);
+        op_idx += lm32gdb_proc_hw_bp(cpu, cmd, &op_buf[op_idx], checksum);
         break;
 
     case 'k':
@@ -797,7 +1025,7 @@ static bool proc_gdb_cmd (lm32_cpu* cpu, const char* cmd, const int cmdlen, cons
         // Output the response for the gdb command to the terminal
         for (int idx = 0; idx < op_idx; idx++)
         {
-            if (write(fd, &op_buf[idx], 1) == -1)
+            if (!lm32gdb_write(fd, &op_buf[idx]))
             {
                 fprintf(stderr, "LM32GDB: ERROR writing to host: terminating.\n");
                 return true;
@@ -814,14 +1042,26 @@ static bool proc_gdb_cmd (lm32_cpu* cpu, const char* cmd, const int cmdlen, cons
 }
 
 // -------------------------------------------------------------------------
+// lm32gdb_create_pty()
+//
+// Opens a pseudo/virtual serial connection, suitable for GDB remote
+// debugging. In the case of Linux, this is done by opening /dev/ptmx,
+// which returns a file descriptor. The created pseudo terminal's name 
+// is available via ptsname(fd), and this is advertised. For windows
+// a serial port is opened, as for a normal COM port, with the assumption
+// that a external virtual port pair is already setup (e.g. with com0com).
+// The file descriptor/handle is returned in pty_fd, and the function
+// returns a 0 value if all is okay, else a non-zero value for an error.
+//
 // -------------------------------------------------------------------------
 
-static int create_pty()
+static int lm32gdb_create_pty(PTY_HDL &pty_fd, int port_num)
 {
-    struct termios tio;
-    int pty_fd;
+#if !(defined(_WIN32) || defined(_WIN64))
 
-    // Create and open a pseudo-terminal for reads ad writes (and not this process's console)
+    struct termios tio;
+
+    // Create and open a pseudo-terminal for reads and writes (and not this process's console)
     if ((pty_fd = open(PTY_MASTER_DEVICE, O_RDWR | O_NOCTTY)) == PTY_ERROR)
     {
         return PTY_ERROR;
@@ -835,8 +1075,6 @@ static int create_pty()
 
     // Advertise the pseudo-terminal being used
     fprintf(stderr, "LM32GDB: Using pseudo-terminal %s\n", ptsname(pty_fd));
-
-    setenv("LM32GDB_PTS", ptsname(pty_fd), 1);
 
     // Get the serial port parameters
     tcgetattr(pty_fd, &tio);
@@ -860,28 +1098,104 @@ static int create_pty()
     tcsetattr(pty_fd, TCSANOW, &tio);
 
     return pty_fd;
+
+#else
+
+    // For windows, we just open a serial port. This code relies on external use of 
+    // virtual com ports, as setup by com0com (https://sourceforge.net/projects/com0com/)
+    // The PTY_MASTER_DEVICE number (defined in lm32_gdb.h) must match the *lower* COM 
+    // port of a created linked pair (e.g. COM6/COM7), and this program will advertise to 
+    // connect to the higher valued port from GDB.
+
+    char comm_port[10];
+    DCB  dcb;
+
+    // Create the string for the comm port name
+    sprintf(comm_port, "COM%d", port_num);
+
+    //  Open a handle to the specified com port.
+    pty_fd = CreateFile(comm_port,
+                        GENERIC_READ | GENERIC_WRITE,
+                        0,                               // must be opened with exclusive-access
+                        NULL,                            // default security attributes
+                        OPEN_EXISTING,                   // must use OPEN_EXISTING
+                        0,                               // not overlapped I/O
+                        NULL );                          // hTemplate must be NULL for comm devices
+
+    if (pty_fd == INVALID_HANDLE_VALUE) 
+    {
+        fprintf (stderr, "LM32GDB: CreateFile failed with error %d.\n", GetLastError());
+        return PTY_ERROR;
+    }
+
+    // Initialize the DCB structure length field.
+    dcb.DCBlength = sizeof(DCB);
+
+    // Build on the current configuration by first retrieving all current
+    // settings.
+    if (!GetCommState(pty_fd, &dcb)) 
+    {
+       fprintf (stderr, "LM32GDB: GetCommState failed with error %d.\n", GetLastError());
+       return PTY_ERROR;
+    }
+
+    // Fill in some DCB values and set the com state: 
+    dcb.BaudRate    = BAUDRATE;      //  baud rate
+    dcb.ByteSize    = 8;             //  data size, xmit and rcv
+    dcb.Parity      = false;         //  parity bit
+    dcb.StopBits    = ONESTOPBIT;    //  stop bit
+    dcb.fDtrControl = 0;
+    dcb.fRtsControl = 0;
+
+    if (!SetCommState(pty_fd, &dcb)) 
+    {
+       fprintf (stderr, "LM32GDB: SetCommState failed with error %d.\n", GetLastError());
+       return PTY_ERROR;
+    }
+
+    // Advertise the serial port being used. Note: lm32-elf-gdb uses Cygwin, 
+    // and needs a Cygwin port for the 'target remote' command, where 
+    // COM1 => /dev/ttyS0, COM2 => /dev/ttyS1 etc.
+
+    fprintf(stderr, "LM32GDB: Using serial port /dev/ttyS%d\n", port_num);
+
+    return LM32GDB_OK;
+
+#endif
 }
 
 // -------------------------------------------------------------------------
+// lm32gdb_process_gdb()
+//
+// Top level for the GDB interface of the lm32 CPU ISS. The function is
+// called with a pointer to an lm32_cpu object, pre-configured if desired.
+// It calls local functions to create a pseudo/virtual serial port for GDB 
+// connection, and starts reading characters for this port. It monitors
+// for start and end of packets, placing packet contents in ip_buf. Once
+// a whole packet is received, it calls lm32gdb_proc_gdb_cmd() to process
+// it. This repeats until lm32gdb_proc_gdb_cmd() returns true, flagging
+// that the GDB session has detached, when the function cleans up and
+// returns. It will return LM32GDB_OK if all is well, else LM32GDB_ERR
+// is returned.
+//
 // -------------------------------------------------------------------------
 
-int process_gdb (lm32_cpu* cpu) 
+int lm32gdb_process_gdb (lm32_cpu* cpu, int port_num) 
 {
-    int  idx      = 0;
-    bool active   = false;
-    bool detached = false;
-    bool waiting  = true;
-    char ipbyte;
-    int  pty_fd;
-    int  status;
+    int     idx      = 0;
+    bool    active   = false;
+    bool    detached = false;
+    bool    waiting  = true;
+    char    ipbyte;
+    PTY_HDL pty_fd;
 
     // Create a pseudo-terminal to use
-    if ((pty_fd = create_pty()) == PTY_ERROR)
+    if (lm32gdb_create_pty(pty_fd, port_num) == PTY_ERROR)
     {
         return PTY_ERROR;
     }
     
-    while (!detached && (status = read(pty_fd, &ipbyte, 1)) == 1)
+    while (!detached && lm32gdb_read(pty_fd, &ipbyte))
     {
         // If waiting for first communication, flag that attachment has happened.
         if (waiting)
@@ -890,11 +1204,13 @@ int process_gdb (lm32_cpu* cpu)
             fprintf(stderr, "LM32GDB: host attached.\n");
         }
 
-        // If receiving a packet end character, process the command an go idle
-        if (active && (ipbyte == GDB_EOP_CHAR || idx == IP_BUFFER_SIZE-1))
+        // If receiving a packet end character (or delimiter for mem writes), process the command an go idle
+        if (active && (ipbyte  == GDB_EOP_CHAR     || 
+                       idx     == IP_BUFFER_SIZE-1 || 
+                       (ipbyte == GDB_MEM_DELIM_CHAR && (ip_buf[0] == 'X' || ip_buf[0] == 'M'))))
         {
             // Acknowledge the packet
-            if (write(pty_fd, &ack_char, 1) == -1)
+            if (!lm32gdb_write(pty_fd, &ack_char))
             {
                 return LM32GDB_ERR;
             }
@@ -903,7 +1219,7 @@ int process_gdb (lm32_cpu* cpu)
             ip_buf[idx] = 0;
 
             // Process the command
-            detached = proc_gdb_cmd(cpu, ip_buf, idx, pty_fd);
+            detached = lm32gdb_proc_gdb_cmd(cpu, ip_buf, idx, pty_fd);
 
             // Flag state as inactive
             active = false;
@@ -912,7 +1228,7 @@ int process_gdb (lm32_cpu* cpu)
             idx    = 0;
 
 #ifdef LM32GDB_DEBUG
-            // Echo termination char to stdout
+            // At termination echo newline char to stdout
             putchar('\n');
             fflush(stdout);
 #endif            
@@ -941,9 +1257,9 @@ int process_gdb (lm32_cpu* cpu)
     }
     else
     {
-        fprintf(stderr, "LM32GDB: connection lost to host (status = %d): terminating.\n", status);
+        fprintf(stderr, "LM32GDB: connection lost to host: terminating.\n");
     }
-    return 0;
+    return LM32GDB_OK;
 }
 
 // -------------------------------------------------------------------------
@@ -957,7 +1273,7 @@ int main(int argc, char** argv)
     lm32_cpu* local_cpu = new lm32_cpu(false, false, true, false);
 
     // Start procssing commands from GDB
-    if (process_gdb(local_cpu))
+    if (lm32gdb_process_gdb(local_cpu))
     {
         fprintf(stderr, "***ERROR in opening PTY\n");
         return PTY_ERROR;

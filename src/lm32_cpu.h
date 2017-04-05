@@ -22,7 +22,7 @@
 // You should have received a copy of the GNU General Public License
 // along with cpumico32. If not, see <http://www.gnu.org/licenses/>.
 //
-// $Id: lm32_cpu.h,v 3.2 2016/09/15 18:13:09 simon Exp $
+// $Id: lm32_cpu.h,v 3.3 2017/04/05 12:43:36 simon Exp $
 // $Source: /home/simon/CVS/src/cpu/mico32/src/lm32_cpu.h,v $
 //
 //=============================================================
@@ -194,6 +194,20 @@ public:
     };
 
 #endif
+
+    // Allocation of memory function
+    inline void* lm32_alloc_mem(int nbytes) 
+    {
+#ifdef LM32_FAST_COMPILE
+        // For fast compile, allocate but don't initialise memory
+        return malloc(nbytes);
+#else
+        // For normal compile, initialise memory with zeros. This ensures
+        // any BSS section is initialised properly, without the need for
+        // CRT0 startup code.
+        return calloc(nbytes, 1);
+#endif
+    }
 
     // Internal register access
     LIBMICO32_API void        lm32_set_gp_reg                (const unsigned index, const uint32_t val);

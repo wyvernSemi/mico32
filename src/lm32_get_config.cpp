@@ -1,6 +1,6 @@
 //=============================================================
 // 
-// Copyright (c) 2013-2016 Simon Southwell. All rights reserved.
+// Copyright (c) 2013-2017 Simon Southwell. All rights reserved.
 //
 // Date: 16th July 2013
 //
@@ -22,7 +22,7 @@
 // You should have received a copy of the GNU General Public License
 // along with cpumico32. If not, see <http://www.gnu.org/licenses/>.
 //
-// $Id: lm32_get_config.cpp,v 3.4 2017/03/31 11:48:39 simon Exp $
+// $Id: lm32_get_config.cpp,v 3.5 2017/04/05 12:43:36 simon Exp $
 // $Source: /home/simon/CVS/src/cpu/mico32/src/lm32_get_config.cpp,v $
 //
 //=============================================================
@@ -36,11 +36,7 @@
 #include <string.h>
 
 #if !(defined _WIN32) && !(defined _WIN64)
-#ifdef CYGWIN
-#include <GetOpt.h>
-#else
 #include <unistd.h>
-#endif
 #else 
 extern "C" {
 extern int getopt(int nargc, char** nargv, char* ostr);
@@ -55,24 +51,33 @@ extern int optind;
 // DEFINES
 // -------------------------------------------------------------------------
 
+// Define the getopt sub-strings for the different groups of arguments
+#define LM32_COMMON_ARGS               "hl:r:R:DIc:i:"
+#define LM32_CPUMICO32_ARGS            "f:m:o:e:T"
+#define LM32_LNXMICO32_ARGS            "s:SL"
+#define LM32_NON_FAST_ARGS             "gn:vxb:dw:"
+#define LM32_LNX_NON_FAST_ARGS         "V:"
+#define LM32_WIN_DBG_ARGS              "G:"
+
+// Construct the getopt arguments specification string based on the compile options
 # ifdef LNXMICO32
 #  ifdef LM32_FAST_COMPILE
-#   define LM32_GETOPT_ARG_STR "l:r:R:DIc:i:s:SL"
+#   define  LM32_GETOPT_ARG_STR LM32_COMMON_ARGS LM32_LNXMICO32_ARGS
 #  else
-#   if !(defined(_WIN32) || defined(_WIN64))
-#    define LM32_GETOPT_ARG_STR "gl:n:vxb:dr:R:DIc:w:i:V:s:SL"
+#   if !(defined _WIN32) && !(defined _WIN64)
+#    define LM32_GETOPT_ARG_STR LM32_COMMON_ARGS LM32_LNXMICO32_ARGS LM32_NON_FAST_ARGS LM32_LNX_NON_FAST_ARGS
 #   else
-#    define LM32_GETOPT_ARG_STR "l:n:vxb:dr:R:DIc:w:i:V:s:SL"
+#    define LM32_GETOPT_ARG_STR LM32_COMMON_ARGS LM32_LNXMICO32_ARGS LM32_NON_FAST_ARGS LM32_LNX_NON_FAST_ARGS LM32_WIN_DBG_ARGS
 #   endif
 #  endif
 # else
 #  ifdef LM32_FAST_COMPILE
-#   define LM32_GETOPT_ARG_STR "l:f:m:o:r:R:DIe:c:i:T"
+#   define  LM32_GETOPT_ARG_STR LM32_COMMON_ARGS LM32_CPUMICO32_ARGS
 #  else
-#   if !(defined(_WIN32) || defined(_WIN64))
-#    define LM32_GETOPT_ARG_STR "gl:f:n:vxb:dm:o:r:R:DIe:c:w:i:T"
+#   if !(defined _WIN32) && !(defined _WIN64)
+#    define LM32_GETOPT_ARG_STR LM32_COMMON_ARGS LM32_CPUMICO32_ARGS LM32_NON_FAST_ARGS
 #   else
-#    define LM32_GETOPT_ARG_STR "l:f:n:vxb:dm:o:r:R:DIe:c:w:i:T"
+#    define LM32_GETOPT_ARG_STR LM32_COMMON_ARGS LM32_CPUMICO32_ARGS LM32_NON_FAST_ARGS LM32_WIN_DBG_ARGS
 #   endif
 #  endif
 #endif
@@ -87,6 +92,7 @@ extern int optind;
 
 #define LM32_CFG_INI_PARAM_WARNING   {fprintf(stderr, "Warning: unrecognised parameter %s in section %s of INI file.\n", \
                                                     cfg_entries[cdx].entry, cfg_entries[cdx].section);}
+
 #define LM32_CFG_INI_SECTION_WARNING {fprintf(stderr, "Warning: unrecognised section %s in INI file.\n", \
                                                     cfg_entries[cdx].section);}
 
@@ -234,6 +240,7 @@ extern "C" lm32_config_t* lm32_get_config(int argc, char** argv, const char* def
     lm32_cpu_cfg.save_state_file                 = false;
     lm32_cpu_cfg.load_state_file                 = false;
     lm32_cpu_cfg.gdb_run                         = false;
+    lm32_cpu_cfg.com_port_num                    = LM32_DEFAULT_COM_PORT;
 
     lm32_cpu_cfg.dcache_cfg.cache_base_addr      = LM32_CACHE_DEFAULT_BASE;
     lm32_cpu_cfg.dcache_cfg.cache_limit          = LM32_CACHE_DEFAULT_DLIMIT;
@@ -257,17 +264,20 @@ extern "C" lm32_config_t* lm32_get_config(int argc, char** argv, const char* def
         case 'i':
             ini_fname = optarg;
             break;
+
         case 'h':
         case '?':
             fprintf(stderr,
-                    "Usage: %s "
+                    "Usage: %s [-h] "
 #ifndef LM32_FAST_COMPILE
-#if !(defined(_WIN32) || defined(_WIN64))
                     "[-g] "
-#endif
+# if defined _WIN32 || defined _WIN64
+                    "[-G <COM #>] "
+# endif
                     "[-v] [-x] [-d] "
 #endif
                     "[-D] [-I] "
+                    "\n         "
 #ifndef LM32_FAST_COMPILE
                     "[-n <num>] [-b <addr>] "
 #endif
@@ -294,10 +304,12 @@ extern "C" lm32_config_t* lm32_get_config(int argc, char** argv, const char* def
                     " [-s <filename>] [-S] [-L]"
 #endif
                     "\n\n"
+                    "    -h Display this help message\n"
 #ifndef LM32_FAST_COMPILE
-#if !(defined(_WIN32) || defined(_WIN64))
                     "    -g Start up in GDB remote debug mode (default: off)\n"
-#endif
+# if defined _WIN32 || defined _WIN64
+                    "    -G Specify COM port to use for GDB remote debug (default: %d)\n"
+# endif
                     "    -n Specify number of instructions to run (default: run forever)\n"
                     "    -b Specify address for breakpoint (default: none)\n"
 #endif
@@ -337,7 +349,7 @@ extern "C" lm32_config_t* lm32_get_config(int argc, char** argv, const char* def
                     "\n"
                     , argv[0]
 #ifndef LNXMICO32
-                    , LM32_DEFAULT_FNAME, LM32_DEFAULT_MEM_SIZE
+                    , LM32_DEFAULT_COM_PORT, LM32_DEFAULT_FNAME, LM32_DEFAULT_MEM_SIZE
 #endif
                         );
             exit(LM32_NO_ERROR);
@@ -573,6 +585,7 @@ extern "C" lm32_config_t* lm32_get_config(int argc, char** argv, const char* def
         // Do nothing for the INI file specification, as already processed
         case 'i':
             break;
+
 #ifndef LNXMICO32
         case 'f':
             lm32_cpu_cfg.filename = optarg;
@@ -581,30 +594,46 @@ extern "C" lm32_config_t* lm32_get_config(int argc, char** argv, const char* def
         case 'I':
             lm32_cpu_cfg.dump_num_exec_instr = 1;
             break;
+
         case 'D':
             lm32_cpu_cfg.dump_registers = 1;
             break;
+
 #ifndef LM32_FAST_COMPILE
         case 'g':
             lm32_cpu_cfg.gdb_run = true;
             break;
+
+# if defined(_WIN32) || defined(_WIN64)
+        // In windows, need a means to specify COM port to use, as not created by the program
+        // (like a pseudo terminal in Linux)
+        case 'G':
+            lm32_cpu_cfg.gdb_run = true;
+            lm32_cpu_cfg.com_port_num = strtol(optarg, NULL, 0);
+            break;
+#endif
         case 'n':
             lm32_cpu_cfg.num_run_instructions = strtol(optarg, NULL, 0);
             if (lm32_cpu_cfg.num_run_instructions < LM32_FOREVER)
                 lm32_cpu_cfg.num_run_instructions = LM32_FOREVER;
             break;
+
         case 'b':
             lm32_cpu_cfg.user_break_addr = (uint32_t)strtol(optarg, NULL, 0);
             break;
+
         case 'x':
             lm32_cpu_cfg.disassemble_run = 1;
             break;
+
         case 'd':
             lm32_cpu_cfg.disable_lock_break = 1;
             break;
+
         case 'w':
             lm32_cpu_cfg.mem_wait_states = (int)strtol(optarg, NULL, 0);
             break;
+
         case 'v':
             lm32_cpu_cfg.verbose = 1;
             break;
@@ -613,6 +642,7 @@ extern "C" lm32_config_t* lm32_get_config(int argc, char** argv, const char* def
             // Silently word align the user specified dump address
             lm32_cpu_cfg.ram_dump_addr = (uint32_t)strtol(optarg, NULL, 0) & 0xfffffffc;
             break;
+
         case 'R':
             lm32_cpu_cfg.ram_dump_bytes = (uint32_t)strtol(optarg, NULL, 0);
 
@@ -621,22 +651,28 @@ extern "C" lm32_config_t* lm32_get_config(int argc, char** argv, const char* def
                 lm32_cpu_cfg.ram_dump_bytes += 4 - (lm32_cpu_cfg.ram_dump_bytes & 0x3);
 
             break;
+
         case 'l':
             lm32_cpu_cfg.log_fname = optarg;
             break;
+
         case 'c':
             lm32_cpu_cfg.cfg_word = strtol(optarg, NULL, 0);
             break;
+
         case 'T':
             lm32_cpu_cfg.test_mode = 1;
             break;
+
 #ifndef LNXMICO32              
         case 'm':
             lm32_cpu_cfg.mem_size = strtol(optarg, NULL, 0);
             break;
+
         case 'o':
             lm32_cpu_cfg.mem_offset = strtol(optarg, NULL, 0);
             break;
+
         case 'e':
             // Silently word align the user specified entry point address
             lm32_cpu_cfg.entry_point_addr = (uint32_t)strtol(optarg, NULL, 0) & 0xfffffffc;
@@ -661,6 +697,7 @@ extern "C" lm32_config_t* lm32_get_config(int argc, char** argv, const char* def
         }
     }
 
+    // Return a pointer the updated configuration structure
     return &lm32_cpu_cfg;
 }
 

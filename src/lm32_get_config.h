@@ -1,6 +1,6 @@
 //=============================================================
 // 
-// Copyright (c) 2016 Simon Southwell. All rights reserved.
+// Copyright (c) 2016 - 2017 Simon Southwell. All rights reserved.
 //
 // Date: 27th August 2016  
 //
@@ -21,7 +21,7 @@
 // You should have received a copy of the GNU General Public License
 // along with cpumico32. If not, see <http://www.gnu.org/licenses/>.
 //
-// $Id: lm32_get_config.h,v 3.0 2016/09/07 13:15:38 simon Exp $
+// $Id: lm32_get_config.h,v 3.1 2017/04/05 12:43:36 simon Exp $
 // $Source: /home/simon/CVS/src/cpu/mico32/src/lm32_get_config.h,v $
 //
 //=============================================================

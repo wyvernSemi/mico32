@@ -21,13 +21,11 @@
     <ConfigurationType>Application</ConfigurationType>
     <UseDebugLibraries>true</UseDebugLibraries>
     <CLRSupport>false</CLRSupport>
-    <CharacterSet>Unicode</CharacterSet>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="Configuration">
     <ConfigurationType>Application</ConfigurationType>
     <UseDebugLibraries>false</UseDebugLibraries>
     <CLRSupport>false</CLRSupport>
-    <CharacterSet>Unicode</CharacterSet>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
   <ImportGroup Label="ExtensionSettings">
@@ -49,7 +47,7 @@
     <ClCompile>
       <WarningLevel>Level3</WarningLevel>
       <Optimization>Disabled</Optimization>
-      <PreprocessorDefinitions>WIN32;_DEBUG;_CRT_SECURE_NO_WARNINGS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>LM32GDB_DEBUG;WIN32;_DEBUG;_CRT_SECURE_NO_WARNINGS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <PrecompiledHeader>NotUsing</PrecompiledHeader>
       <CompileAsManaged>false</CompileAsManaged>
       <AdditionalOptions>/D _CRT_SECURE_NO_WARNINGS %(AdditionalOptions)</AdditionalOptions>
@@ -87,6 +85,7 @@
     <ClCompile Include="..\..\src\lm32_cpu_disassembler.cpp" />
     <ClCompile Include="..\..\src\lm32_cpu_elf.cpp" />
     <ClCompile Include="..\..\src\lm32_cpu_inst.cpp" />
+    <ClCompile Include="..\..\src\lm32_gdb.cpp" />
     <ClCompile Include="..\..\src\lm32_get_config.cpp" />
   </ItemGroup>
   <ItemGroup>
@@ -96,6 +95,7 @@
     <ClInclude Include="..\..\src\lm32_cpu_elf.h" />
     <ClInclude Include="..\..\src\lm32_cpu_hdr.h" />
     <ClInclude Include="..\..\src\lm32_cpu_mico32.h" />
+    <ClInclude Include="..\..\src\lm32_gdb.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
