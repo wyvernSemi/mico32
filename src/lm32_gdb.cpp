@@ -19,7 +19,7 @@
 // You should have received a copy of the GNU General Public License
 // along with cpumico32. If not, see <http://www.gnu.org/licenses/>.
 //
-// $Id: lm32_gdb.cpp,v 3.2 2017/04/05 12:43:36 simon Exp $
+// $Id: lm32_gdb.cpp,v 3.3 2017/04/06 15:04:12 simon Exp $
 // $Source: /home/simon/CVS/src/cpu/mico32/src/lm32_gdb.cpp,v $
 //
 //=============================================================
@@ -637,6 +637,9 @@ static int lm32gdb_set_hw_wp (lm32_cpu* cpu, const char *cmd)
         break;
     }
 
+    // Skip the comma
+    cdx++;
+
     // Get the address from the command buffer
     while (cmd[cdx] != ',')
     {
@@ -723,6 +726,9 @@ static int lm32gdb_clear_hw_wp (lm32_cpu* cpu, const char *cmd)
         wp_type = LM32_WP_BREAK_ALWAYS;
         break;
     }
+
+    // Skip the comma
+    cdx++;
 
     // Get the address from the command buffer
     while (cmd[cdx] != ',')

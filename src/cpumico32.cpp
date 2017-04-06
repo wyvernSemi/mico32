@@ -23,7 +23,7 @@
 // You should have received a copy of the GNU General Public License
 // along with cpumico32. If not, see <http://www.gnu.org/licenses/>.
 //
-// $Id: cpumico32.cpp,v 3.3 2017/04/05 12:43:36 simon Exp $
+// $Id: cpumico32.cpp,v 3.4 2017/04/06 15:05:16 simon Exp $
 // $Source: /home/simon/CVS/src/cpu/mico32/src/cpumico32.cpp,v $
 //
 //=============================================================
@@ -164,6 +164,7 @@ int main (int argc, char** argv)
                 fprintf(stderr, "***ERROR: failed external access test\n");
                 exit(LM32_INTERNAL_ERROR);
             }
+            reg_val = cpu->lm32_set_hw_debug_reg(0, LM32_CSR_ID_BP0+idx);
         }
 
         // Do a quick test of the WP register access functions
@@ -176,6 +177,7 @@ int main (int argc, char** argv)
                 fprintf(stderr, "***ERROR: failed external access test\n");
                 exit(LM32_INTERNAL_ERROR);
             }
+            reg_val = cpu->lm32_set_hw_debug_reg(0, LM32_CSR_ID_WP0+idx);
         }
 
         // Check we can get the internal state over the external access method
