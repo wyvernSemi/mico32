@@ -22,7 +22,7 @@
 // You should have received a copy of the GNU General Public License
 // along with cpumico32. If not, see <http://www.gnu.org/licenses/>.
 //
-// $Id: lm32_cpu_c.h,v 3.0 2016/09/07 13:15:37 simon Exp $
+// $Id: lm32_cpu_c.h,v 3.1 2017/04/10 13:19:29 simon Exp $
 // $Source: /home/simon/CVS/src/cpu/mico32/src/lm32_cpu_c.h,v $
 //
 //=============================================================
@@ -103,6 +103,7 @@ lm32c_hdl   lm32c_cpu_init                  (int                  verbose,
                                              int                  disable_reset_break,
                                              int                  disable_lock_break,
                                              int                  disable_hw_break,
+                                             int                  disable_int_break,
                                              int                  disassemble_run,
                                              uint32_t             num_mem_bytes,
                                              uint32_t             mem_offset,

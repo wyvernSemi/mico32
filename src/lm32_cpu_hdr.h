@@ -21,7 +21,7 @@
 // You should have received a copy of the GNU General Public License
 // along with cpumico32. If not, see <http://www.gnu.org/licenses/>.
 //
-// $Id: lm32_cpu_hdr.h,v 3.2 2017/04/05 12:43:36 simon Exp $
+// $Id: lm32_cpu_hdr.h,v 3.3 2017/04/10 13:19:29 simon Exp $
 // $Source: /home/simon/CVS/src/cpu/mico32/src/lm32_cpu_hdr.h,v $
 //
 //=============================================================
@@ -58,6 +58,9 @@
 #define LM32_SINGLE_STEP_BREAK       6
 #define LM32_TICK_BREAK              7
 #define LM32_RESET_BREAK             8
+#define LM32_INT_BREAK               9
+#define LM32_BUS_ERROR_BREAK         10
+#define LM32_DIV_ZERO_BREAK          11
 
 // Default values for configuration
 #define LM32_DEFAULT_FNAME           "test.elf"
@@ -311,6 +314,7 @@ typedef struct {
     int                 num_run_instructions;
     int                 disable_reset_break;
     int                 disable_hw_break;
+    int                 disable_int_break;
     int                 disable_lock_break;
     uint32_t            mem_size;
     uint32_t            mem_offset;

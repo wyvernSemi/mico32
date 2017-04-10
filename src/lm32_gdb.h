@@ -19,7 +19,7 @@
 // You should have received a copy of the GNU General Public License
 // along with cpumico32. If not, see <http://www.gnu.org/licenses/>.
 //
-// $Id: lm32_gdb.h,v 3.2 2017/04/05 12:43:36 simon Exp $
+// $Id: lm32_gdb.h,v 3.3 2017/04/10 13:19:29 simon Exp $
 // $Source: /home/simon/CVS/src/cpu/mico32/src/lm32_gdb.h,v $
 //
 //=============================================================
@@ -56,7 +56,7 @@
 #define LM32GDB_OK            0
 #define LM32GDB_ERR           -1
 
-#define IP_BUFFER_SIZE        (64*1024)
+#define IP_BUFFER_SIZE        1024
 #define OP_BUFFER_SIZE        1024
 #define PTY_ERROR             LM32GDB_ERR
 #define GDB_ACK_CHAR          '+'

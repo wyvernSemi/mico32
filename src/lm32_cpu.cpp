@@ -22,7 +22,7 @@
 // You should have received a copy of the GNU General Public License
 // along with cpumico32. If not, see <http://www.gnu.org/licenses/>.
 //
-// $Id: lm32_cpu.cpp,v 3.8 2017/04/05 12:43:36 simon Exp $
+// $Id: lm32_cpu.cpp,v 3.9 2017/04/10 13:19:29 simon Exp $
 // $Source: /home/simon/CVS/src/cpu/mico32/src/lm32_cpu.cpp,v $
 //
 //=============================================================
@@ -63,6 +63,7 @@ lm32_cpu::lm32_cpu (const int verbose_in,
                     const bool disable_reset_break_in, 
                     const bool disable_lock_break_in, 
                     const bool disable_hw_break_in,
+                    const bool disable_int_break_in,
                     bool disassemble_run_in, 
                     const uint32_t num_mem_bytes_in, 
                     const uint32_t mem_offset_in, 
@@ -78,6 +79,7 @@ lm32_cpu::lm32_cpu (const int verbose_in,
     disable_lock_break(disable_lock_break_in),   // Disable/enable breakpoint on lock conditions
     disable_reset_break(disable_reset_break_in),
     disable_hw_break(disable_hw_break_in),
+    disable_int_break(disable_int_break_in),
     disassemble_run(disassemble_run_in),         // Enable/disable a disassemble run
     num_mem_bytes(num_mem_bytes_in),             // User definable size of code/data memory
     mem_offset(mem_offset_in),
@@ -88,7 +90,6 @@ lm32_cpu::lm32_cpu (const int verbose_in,
     p_dcache_cfg(p_dcache_cfg_in),
     disassemble_start(disassemble_start_in)
 {
-
     icache_p = dcache_p = NULL;
 
     disassemble_active = disassemble_start ? false : true;
@@ -1168,6 +1169,30 @@ int lm32_cpu::lm32_run_program (const char* filename, const lm32_time_t cycles, 
                 break_point = LM32_HW_WATCHPOINT_BREAK;
                 break;
             }
+        }
+
+        // If enabled, break on external interrupt
+        if (!disable_int_break)
+        {
+            if (state.int_flags & (1 << INT_ID_EXTINT))
+            {
+                break_point = LM32_INT_BREAK;
+                break;
+            }
+        }
+
+        // Break on divide by zero
+        if (state.int_flags & (1 << INT_ID_DIVZERO))
+        {
+            break_point = LM32_DIV_ZERO_BREAK;
+            break;
+        }
+
+        // Break on bus error
+        if (state.int_flags & ((1 << INT_ID_IBUSERROR) | (1 << INT_ID_DBUSERROR)))
+        {
+            break_point = LM32_BUS_ERROR_BREAK;
+            break;
         }
 
         // Break on a reset exception

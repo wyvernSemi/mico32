@@ -21,7 +21,7 @@
 // You should have received a copy of the GNU General Public License
 // along with cpumico32. If not, see <http://www.gnu.org/licenses/>.
 //
-// $Id: lm32_cpu_c.cpp,v 3.0 2016/09/07 13:15:37 simon Exp $
+// $Id: lm32_cpu_c.cpp,v 3.1 2017/04/10 13:19:29 simon Exp $
 // $Source: /home/simon/CVS/src/cpu/mico32/src/lm32_cpu_c.cpp,v $
 //
 //=============================================================
@@ -39,7 +39,7 @@
 
 // -------------------------------------------------------------------------
 
-extern "C" lm32c_hdl lm32c_cpu_init(int verbose, int disable_reset_break, int disable_lock_break, int disable_hw_break, int disassemble_run,
+extern "C" lm32c_hdl lm32c_cpu_init(int verbose, int disable_reset_break, int disable_lock_break, int disable_hw_break, int disable_int_break, int disassemble_run,
                                     uint32_t num_mem_bytes, uint32_t mem_offset, int mem_wait_states, uint32_t entry_point_addr, uint32_t cfg_word, FILE* ofp,
                                     lm32_cache_config_t* p_dcache_cfg, lm32_cache_config_t* p_icache_cfg)
 {
@@ -48,6 +48,7 @@ extern "C" lm32c_hdl lm32c_cpu_init(int verbose, int disable_reset_break, int di
                        disable_reset_break ? true : false,
                        disable_lock_break  ? true : false,
                        disable_hw_break    ? true : false,
+                       disable_int_break   ? true : false,
                        disassemble_run     ? true : false,
                        num_mem_bytes,
                        mem_offset,

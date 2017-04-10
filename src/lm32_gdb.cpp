@@ -19,7 +19,7 @@
 // You should have received a copy of the GNU General Public License
 // along with cpumico32. If not, see <http://www.gnu.org/licenses/>.
 //
-// $Id: lm32_gdb.cpp,v 3.3 2017/04/06 15:04:12 simon Exp $
+// $Id: lm32_gdb.cpp,v 3.4 2017/04/10 13:19:29 simon Exp $
 // $Source: /home/simon/CVS/src/cpu/mico32/src/lm32_gdb.cpp,v $
 //
 //=============================================================
@@ -836,7 +836,7 @@ static int lm32gdb_run_cpu (lm32_cpu* cpu, const char* cmd, const int cmdlen, co
         
         // Fetch CPU state and clear watchpoint interrupt
         cpu_state = cpu->lm32_get_cpu_state();
-        cpu_state.int_flags &= ~(1 <<INT_ID_WATCHPOINT);
+        cpu_state.int_flags &= ~(1 << INT_ID_WATCHPOINT);
 
         // Write back the updated CPU state
         cpu->lm32_set_cpu_state(cpu_state);
@@ -846,6 +846,18 @@ static int lm32gdb_run_cpu (lm32_cpu* cpu, const char* cmd, const int cmdlen, co
 
     case LM32_SINGLE_STEP_BREAK:
         reason = SIGTRAP;
+        break;
+
+    case LM32_BUS_ERROR_BREAK:
+        reason = SIGSEGV;
+        break;
+
+    case LM32_DIV_ZERO_BREAK:
+        reason = SIGFPE;
+        break;
+
+    case LM32_INT_BREAK:
+        reason = SIGINT;
         break;
 
     case LM32_RESET_BREAK:

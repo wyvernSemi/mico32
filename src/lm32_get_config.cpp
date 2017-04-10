@@ -22,7 +22,7 @@
 // You should have received a copy of the GNU General Public License
 // along with cpumico32. If not, see <http://www.gnu.org/licenses/>.
 //
-// $Id: lm32_get_config.cpp,v 3.5 2017/04/05 12:43:36 simon Exp $
+// $Id: lm32_get_config.cpp,v 3.6 2017/04/10 13:19:29 simon Exp $
 // $Source: /home/simon/CVS/src/cpu/mico32/src/lm32_get_config.cpp,v $
 //
 //=============================================================
@@ -228,8 +228,9 @@ extern "C" lm32_config_t* lm32_get_config(int argc, char** argv, const char* def
     lm32_cpu_cfg.disassemble_run                 = 0;
     lm32_cpu_cfg.user_break_addr                 = -1;
     lm32_cpu_cfg.num_run_instructions            = LM32_FOREVER;
-    lm32_cpu_cfg.disable_reset_break             = 0;
-    lm32_cpu_cfg.disable_hw_break                = 0;
+    lm32_cpu_cfg.disable_reset_break             = 1;
+    lm32_cpu_cfg.disable_hw_break                = 1;
+    lm32_cpu_cfg.disable_int_break               = 1;
     lm32_cpu_cfg.disable_lock_break              = 0;
     lm32_cpu_cfg.mem_size                        = LM32_DEFAULT_MEM_SIZE;
     lm32_cpu_cfg.mem_offset                      = 0; 

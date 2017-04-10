@@ -22,7 +22,7 @@
 // You should have received a copy of the GNU General Public License
 // along with cpumico32. If not, see <http://www.gnu.org/licenses/>.
 //
-// $Id: lm32_cpu.h,v 3.3 2017/04/05 12:43:36 simon Exp $
+// $Id: lm32_cpu.h,v 3.4 2017/04/10 13:19:29 simon Exp $
 // $Source: /home/simon/CVS/src/cpu/mico32/src/lm32_cpu.h,v $
 //
 //=============================================================
@@ -120,6 +120,7 @@ public:
                                                 const bool           disable_reset_break = true,
                                                 const bool           disable_lock_break  = false,
                                                 const bool           disable_hw_break    = true,
+                                                const bool           disable_int_break   = true,
                                                 const bool           disassemble_run     = false,
                                                 const uint32_t       num_mem_bytes       = LM32_DEFAULT_MEM_SIZE,
                                                 const uint32_t       mem_offset          = 0,
@@ -365,6 +366,7 @@ private:
     bool                       disable_reset_break;  // Disable/enable breakpoint on reset of CPU
     bool                       disable_lock_break;   // Disable/enable breakpoint on lock conditions
     bool                       disable_hw_break;     // Disable break on a h/w breakpoint
+    bool                       disable_int_break;    // Disable break on an external interrupt
     int                        verbose;              // Verbosity level
     uint32_t                   num_mem_bytes;        // User definable size of code/data memory
     uint32_t                   num_mem_bytes_mask;   // MAsk for specified number of bytes (num_mem_bytes-1)

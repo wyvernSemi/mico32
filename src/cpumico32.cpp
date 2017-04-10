@@ -23,7 +23,7 @@
 // You should have received a copy of the GNU General Public License
 // along with cpumico32. If not, see <http://www.gnu.org/licenses/>.
 //
-// $Id: cpumico32.cpp,v 3.4 2017/04/06 15:05:16 simon Exp $
+// $Id: cpumico32.cpp,v 3.5 2017/04/10 13:19:29 simon Exp $
 // $Source: /home/simon/CVS/src/cpu/mico32/src/cpumico32.cpp,v $
 //
 //=============================================================
@@ -129,6 +129,7 @@ int main (int argc, char** argv)
                        p_cfg->disable_reset_break ? true : false,
                        p_cfg->disable_lock_break  ? true : false,
                        p_cfg->disable_hw_break    ? true : false,
+                       p_cfg->disable_int_break   ? true : false,
                        p_cfg->disassemble_run     ? true : false,
                        p_cfg->mem_size,
                        p_cfg->mem_offset,
