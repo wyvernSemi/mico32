@@ -21,7 +21,7 @@
 // You should have received a copy of the GNU General Public License
 // along with cpumico32. If not, see <http://www.gnu.org/licenses/>.
 //
-// $Id: lm32_cpu_mico32.h,v 3.0 2016/09/07 13:15:37 simon Exp $
+// $Id: lm32_cpu_mico32.h,v 3.1 2017/04/11 12:40:41 simon Exp $
 // $Source: /home/simon/CVS/src/cpu/mico32/src/lm32_cpu_mico32.h,v $
 //
 //=============================================================
@@ -148,6 +148,7 @@
 #define BREAK_INSTR             (0xAC000002)
 #define SCALL_INSTR             (0xAC000007)
 
+#define R0_REG_IDX              (0)
 #define GP_REG_IDX              (26)
 #define FP_REG_IDX              (27)
 #define SP_REG_IDX              (28)

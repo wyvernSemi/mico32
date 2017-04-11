@@ -19,7 +19,7 @@
 // You should have received a copy of the GNU General Public License
 // along with cpumico32. If not, see <http://www.gnu.org/licenses/>.
 //
-// $Id: lm32_gdb.cpp,v 3.4 2017/04/10 13:19:29 simon Exp $
+// $Id: lm32_gdb.cpp,v 3.5 2017/04/11 12:35:20 simon Exp $
 // $Source: /home/simon/CVS/src/cpu/mico32/src/lm32_gdb.cpp,v $
 //
 //=============================================================
@@ -344,7 +344,7 @@ static int lm32gdb_read_mem(lm32_cpu* cpu, const char* cmd, const int cmdlen, ch
     // Get memory bytes and put values as hex characters in buffer
     for (unsigned idx = 0; idx < len; idx++)
     {
-        unsigned val = cpu->lm32_read_mem(addr++, LM32_MEM_RD_ACCESS_BYTE);
+        unsigned val = cpu->lm32_read_mem(addr++, LM32_MEM_RD_GDB_BYTE);
         
         checksum += buf[bdx++] = HIHEXCHAR(val);
         checksum += buf[bdx++] = LOHEXCHAR(val);
@@ -975,12 +975,10 @@ static bool lm32gdb_proc_gdb_cmd (lm32_cpu* cpu, const char* cmd, const int cmdl
         op_idx += lm32gdb_read_mem(cpu, cmd, cmdlen, &op_buf[op_idx], checksum);
         break;
 
-//#if !(defined(_WIN32) || defined(_WIN64)) && !defined (LM32GDB_DEBUG)
     // Write memory (binary)
     case 'X':
         op_idx += lm32gdb_write_mem(fd, cpu, cmd, cmdlen, &op_buf[op_idx], checksum, true);
         break;
-//#endif
 
     // Write memory
     case 'M':

@@ -21,7 +21,7 @@
 // You should have received a copy of the GNU General Public License
 // along with cpumico32. If not, see <http://www.gnu.org/licenses/>.
 //
-// $Id: lm32_cpu_hdr.h,v 3.3 2017/04/10 13:19:29 simon Exp $
+// $Id: lm32_cpu_hdr.h,v 3.4 2017/04/11 12:42:00 simon Exp $
 // $Source: /home/simon/CVS/src/cpu/mico32/src/lm32_cpu_hdr.h,v $
 //
 //=============================================================
@@ -86,7 +86,13 @@
 #define LM32_MEM_RD_ACCESS_HWORD     5
 #define LM32_MEM_RD_ACCESS_WORD      6
 #define LM32_MEM_RD_INSTR            7
+
+#define LM32_MEM_NOT_DBG_MASK        0x0f
+#define LM32_MEM_DBG_MASK            0x10
+
+#define LM32_MEM_RD_GDB_BYTE         (LM32_MEM_RD_ACCESS_BYTE | LM32_MEM_DBG_MASK) 
 #define LM32_MEM_RNW_MASK            0x4
+
 
 #define LM32_MEM_DISABLE_CYCLE_COUNT true
 

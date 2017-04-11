@@ -22,7 +22,7 @@
 // You should have received a copy of the GNU General Public License
 // along with cpumico32. If not, see <http://www.gnu.org/licenses/>.
 //
-// $Id: lm32_cpu.cpp,v 3.9 2017/04/10 13:19:29 simon Exp $
+// $Id: lm32_cpu.cpp,v 3.10 2017/04/11 12:45:00 simon Exp $
 // $Source: /home/simon/CVS/src/cpu/mico32/src/lm32_cpu.cpp,v $
 //
 //=============================================================
@@ -501,12 +501,17 @@ uint32_t lm32_cpu::lm32_read_mem (const uint32_t byte_addr_raw, const int type)
         // Check input is a valid address
         if (byte_addr_raw > (num_mem_bytes + mem_offset) || (byte_addr_raw < mem_offset)) 
         {
-            state.int_flags |= (1 << ((type == LM32_MEM_RD_INSTR) ? INT_ID_IBUSERROR : INT_ID_DBUSERROR)); 
+            // Flag as a bus error only if this is not a debug access, as debugger may try
+            // an inspect non-valid addresses.
+            if (!(type & LM32_MEM_DBG_MASK))
+            {
+                state.int_flags |= (1 << ((type == LM32_MEM_RD_INSTR) ? INT_ID_IBUSERROR : INT_ID_DBUSERROR));
+            }
             return 0;
         }
 #endif
 
-        switch(type)
+        switch(type & LM32_MEM_NOT_DBG_MASK)
         {
         case LM32_MEM_RD_ACCESS_BYTE:
 
@@ -824,6 +829,7 @@ void lm32_cpu::internal_reset_cpu()
     // registers have undefined state anyway).
     state.r[SP_REG_IDX] = mem_offset + num_mem_bytes - 4;
     state.r[FP_REG_IDX] = mem_offset + num_mem_bytes - 4;
+    state.r[R0_REG_IDX] = 0;
 
     // Model state
     break_point    = 0;

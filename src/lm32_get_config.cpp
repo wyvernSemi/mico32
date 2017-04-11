@@ -22,7 +22,7 @@
 // You should have received a copy of the GNU General Public License
 // along with cpumico32. If not, see <http://www.gnu.org/licenses/>.
 //
-// $Id: lm32_get_config.cpp,v 3.6 2017/04/10 13:19:29 simon Exp $
+// $Id: lm32_get_config.cpp,v 3.7 2017/04/11 12:31:27 simon Exp $
 // $Source: /home/simon/CVS/src/cpu/mico32/src/lm32_get_config.cpp,v $
 //
 //=============================================================
@@ -228,8 +228,8 @@ extern "C" lm32_config_t* lm32_get_config(int argc, char** argv, const char* def
     lm32_cpu_cfg.disassemble_run                 = 0;
     lm32_cpu_cfg.user_break_addr                 = -1;
     lm32_cpu_cfg.num_run_instructions            = LM32_FOREVER;
-    lm32_cpu_cfg.disable_reset_break             = 1;
-    lm32_cpu_cfg.disable_hw_break                = 1;
+    lm32_cpu_cfg.disable_reset_break             = 0;
+    lm32_cpu_cfg.disable_hw_break                = 0;
     lm32_cpu_cfg.disable_int_break               = 1;
     lm32_cpu_cfg.disable_lock_break              = 0;
     lm32_cpu_cfg.mem_size                        = LM32_DEFAULT_MEM_SIZE;
@@ -349,8 +349,11 @@ extern "C" lm32_config_t* lm32_get_config(int argc, char** argv, const char* def
 #endif
                     "\n"
                     , argv[0]
+#if defined _WIN32 || defined _WIN64
+                    , LM32_DEFAULT_COM_PORT
+#endif
 #ifndef LNXMICO32
-                    , LM32_DEFAULT_COM_PORT, LM32_DEFAULT_FNAME, LM32_DEFAULT_MEM_SIZE
+                    , LM32_DEFAULT_FNAME, LM32_DEFAULT_MEM_SIZE
 #endif
                         );
             exit(LM32_NO_ERROR);
