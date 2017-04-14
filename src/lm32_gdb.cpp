@@ -19,7 +19,7 @@
 // You should have received a copy of the GNU General Public License
 // along with cpumico32. If not, see <http://www.gnu.org/licenses/>.
 //
-// $Id: lm32_gdb.cpp,v 3.5 2017/04/11 12:35:20 simon Exp $
+// $Id: lm32_gdb.cpp,v 3.6 2017/04/14 06:59:59 simon Exp $
 // $Source: /home/simon/CVS/src/cpu/mico32/src/lm32_gdb.cpp,v $
 //
 //=============================================================
@@ -860,6 +860,10 @@ static int lm32gdb_run_cpu (lm32_cpu* cpu, const char* cmd, const int cmdlen, co
         reason = SIGINT;
         break;
 
+    case LM32_LOCK_BREAK:
+        reason = SIGTERM;
+        break;
+
     case LM32_RESET_BREAK:
         reason = 0;
         break;
@@ -1174,6 +1178,7 @@ static int lm32gdb_create_pty(PTY_HDL &pty_fd, int port_num)
     // COM1 => /dev/ttyS0, COM2 => /dev/ttyS1 etc.
 
     fprintf(stderr, "LM32GDB: Using serial port /dev/ttyS%d\n", port_num);
+    fflush(stderr);
 
     return LM32GDB_OK;
 
@@ -1218,6 +1223,7 @@ int lm32gdb_process_gdb (lm32_cpu* cpu, int port_num)
         {
             waiting = false;
             fprintf(stderr, "LM32GDB: host attached.\n");
+            fflush(stderr);
         }
 
         // If receiving a packet end character (or delimiter for mem writes), process the command an go idle
