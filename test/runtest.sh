@@ -134,7 +134,6 @@ do
 	num_failures=$(($num_failures + 1))
     fi
 
-
     # Clean up temporary files
     rm $objfile $testfile $tmpinifile
 

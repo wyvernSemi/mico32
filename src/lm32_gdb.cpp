@@ -19,7 +19,7 @@
 // You should have received a copy of the GNU General Public License
 // along with cpumico32. If not, see <http://www.gnu.org/licenses/>.
 //
-// $Id: lm32_gdb.cpp,v 3.6 2017/04/14 06:59:59 simon Exp $
+// $Id: lm32_gdb.cpp,v 3.8 2017/04/20 09:02:48 simon Exp $
 // $Source: /home/simon/CVS/src/cpu/mico32/src/lm32_gdb.cpp,v $
 //
 //=============================================================
@@ -34,11 +34,29 @@
 #include <errno.h>
 #include <fcntl.h>
 
-#if (!defined(_WIN32) && !defined(_WIN64)) || defined __CYGWIN__
-#include <termios.h>
-#include <unistd.h>
+// For Windows, need to link with Ws2_32.lib
+#if defined (_WIN32) || defined (_WIN64)
+// -------------------------------------------------------------------------
+// INCLUDES (windows)
+// -------------------------------------------------------------------------
+
+# undef   UNICODE
+# define  WIN32_LEAN_AND_MEAN
+  
+# include <windows.h>
+# include <winsock2.h>
+# include <ws2tcpip.h>
 #else
-#include <windows.h>
+// -------------------------------------------------------------------------
+// INCLUDES (Linux)
+// -------------------------------------------------------------------------
+ 
+# include <string.h>
+# include <unistd.h>
+# include <sys/types.h> 
+# include <sys/socket.h>
+# include <netinet/in.h>
+# include <termios.h>
 #endif
 
 #include "lm32_gdb.h"
@@ -59,6 +77,45 @@ static char ip_buf[IP_BUFFER_SIZE];
 static char op_buf[OP_BUFFER_SIZE];
 
 // -------------------------------------------------------------------------
+// lm32gdb_skt_init()
+//
+// Does any required socket initialisation, prior to opening a TCP socket.
+// Current, only windows requires any handling.
+//
+// -------------------------------------------------------------------------
+
+inline static int lm32gdb_skt_init(void)
+{
+#if defined (_WIN32) || defined (_WIN64)     
+    WSADATA wsaData; 
+    
+    // Initialize Winsock (windows only). Use windows socket spec. verions up to 2.2.
+    if (int status = WSAStartup(MAKEWORD(VER_MAJOR, VER_MINOR), &wsaData))
+    {
+        fprintf(stderr, "WSAStartup failed with error: %d\n", status);
+        return LM32GDB_ERR;
+    }
+#endif
+
+    return LM32GDB_OK;
+}
+
+// -------------------------------------------------------------------------
+// lm32_skt_cleanup()
+//
+// Does any open TCP socket cleanup before exiting the program. Current, 
+// only windows requires any handling.
+//
+// -------------------------------------------------------------------------
+
+inline static void lm32gdb_skt_cleanup(void)
+{
+#if defined (_WIN32) || defined (_WIN64)     
+    WSACleanup();
+#endif    
+}
+
+// -------------------------------------------------------------------------
 // lm32gdb_read()
 //
 // Read a byte from the PTY (fd) and place in the buffer (buf). Return true
@@ -67,24 +124,44 @@ static char op_buf[OP_BUFFER_SIZE];
 //
 // -------------------------------------------------------------------------
 
-inline bool lm32gdb_read (PTY_HDL fd, char* buf)
+static inline bool lm32gdb_read (void* fdin, char* buf, bool tcp_connection)
 {
+    int status = LM32GDB_OK;
+    long fd = (long)fdin;
+
+    if (tcp_connection)
+    {
+        
+
+        // Read from the connection (up to 255 bytes plus null termination).
+        if (recv((lm32gdb_skt_t)fd, buf, 1, 0) < 0)
+        {
+            fprintf(stderr, "ERROR reading from socket\n");
+            lm32gdb_skt_cleanup();
+            status = LM32GDB_ERR;
+        }
+    }
+    else
+    {
 
 #if !(defined(_WIN32) || defined(_WIN64))
-    int status = read(fd, buf, 1);
-
-    return (status == 1);
+        if (read(fd, buf, 1) != 1)
+        {
+            status = LM32GDB_ERR;
+        }
 #else
-    unsigned long status;
+        DWORD n;
 
-    if (!ReadFile(fd, buf, 1, &status, NULL))
-    {
-        fprintf(stderr, "ReadFile returned an error %d\n", GetLastError());
-        return false;
+        if (!ReadFile((PTY_HDL)fd, buf, 1, &n, NULL))
+        {
+            fprintf(stderr, "ReadFile returned an error %d\n", GetLastError());
+            status = LM32GDB_ERR;
+        }
+#endif        
     }
 
-    return true;
-#endif
+
+    return status == LM32GDB_OK; 
 }
 
 // -------------------------------------------------------------------------
@@ -96,23 +173,37 @@ inline bool lm32gdb_read (PTY_HDL fd, char* buf)
 //
 // -------------------------------------------------------------------------
 
-inline bool lm32gdb_write (PTY_HDL fd, char* buf)
+static inline bool lm32gdb_write (void* fd, char* buf, bool tcp_connection)
 {
-#if !(defined(_WIN32) || defined(_WIN64))
-    int status = write(fd, buf, 1);
+    int status = LM32GDB_OK;
 
-    return (status != -1);
-#else
-    unsigned long status;
-
-    if (!WriteFile(fd, buf, 1, &status, NULL))
+    if (tcp_connection)
     {
-        fprintf(stderr, "WriteFile returned an error %d\n", GetLastError());
-        return false;
+        if (send((lm32gdb_skt_t)fd, buf, 1, 0) < 0) 
+        {
+            fprintf(stderr, "ERROR writing to socket\n");
+            status = LM32GDB_ERR;
+        }
+    }
+    else
+    {
+#if !(defined(_WIN32) || defined(_WIN64))
+        int n;
+        if (write((PTY_HDL)fd, buf, 1) != 1)
+        {
+            status = LM32GDB_ERR;
+        }
+#else
+        DWORD n;
+        if (!WriteFile((PTY_HDL)fd, buf, 1, &n, NULL))
+        {
+            fprintf(stderr, "WriteFile returned an error %d\n", GetLastError());
+            status = LM32GDB_ERR;
+        }
+#endif
     }
 
-    return true;
-#endif
+    return status == LM32GDB_OK;
 }
 
 // -------------------------------------------------------------------------
@@ -373,7 +464,8 @@ static int lm32gdb_read_mem(lm32_cpu* cpu, const char* cmd, const int cmdlen, ch
 //
 // -------------------------------------------------------------------------
 
-static int lm32gdb_write_mem (const PTY_HDL fd, lm32_cpu* cpu, const char* cmd, const int cmdlen, char *buf, unsigned char &checksum, const bool is_binary = false)
+static int lm32gdb_write_mem (void* fd, lm32_cpu* cpu, const char* cmd, const int cmdlen, char *buf, unsigned char &checksum, 
+                              const bool tcp_connection, const bool is_binary)
 {
     int      bdx          = 0;
     int      cdx          = 0;
@@ -414,7 +506,7 @@ static int lm32gdb_write_mem (const PTY_HDL fd, lm32_cpu* cpu, const char* cmd, 
 
         if (is_binary)
         {
-            io_status_ok |= lm32gdb_read(fd, ipbyte);
+            io_status_ok |= lm32gdb_read(fd, ipbyte, tcp_connection);
 
             val = ipbyte[0];
             
@@ -423,15 +515,15 @@ static int lm32gdb_write_mem (const PTY_HDL fd, lm32_cpu* cpu, const char* cmd, 
             // containing '*' (0x2a) must be escaped. See 'Debugging with GDB' manual, Appendix E.1
             if (val == GDB_BIN_ESC)
             {
-                io_status_ok |= lm32gdb_read(fd, ipbyte);
+                io_status_ok |= lm32gdb_read(fd, ipbyte, tcp_connection);
                 
                 val = ipbyte[0] ^ GDB_BIN_XOR_VAL;
             }
         }
         else
         {
-            io_status_ok |= lm32gdb_read(fd, &ipbyte[0]);
-            io_status_ok |= lm32gdb_read(fd, &ipbyte[1]);
+            io_status_ok |= lm32gdb_read(fd, &ipbyte[0], tcp_connection);
+            io_status_ok |= lm32gdb_read(fd, &ipbyte[1], tcp_connection);
 
             // Get byte value from hex
             val  = CHAR2NIB(ipbyte[0]) << 4;
@@ -943,7 +1035,7 @@ static int lm32gdb_proc_hw_bp(lm32_cpu* cpu, const char* cmd, char* op_buf,  uns
 //
 // -------------------------------------------------------------------------
 
-static bool lm32gdb_proc_gdb_cmd (lm32_cpu* cpu, const char* cmd, const int cmdlen, const PTY_HDL fd)
+static bool lm32gdb_proc_gdb_cmd (lm32_cpu* cpu, const char* cmd, const int cmdlen, void* fd, bool tcp_connection)
 {
     int           cmd_idx   = 1;
     int           op_idx    = 0;
@@ -981,12 +1073,12 @@ static bool lm32gdb_proc_gdb_cmd (lm32_cpu* cpu, const char* cmd, const int cmdl
 
     // Write memory (binary)
     case 'X':
-        op_idx += lm32gdb_write_mem(fd, cpu, cmd, cmdlen, &op_buf[op_idx], checksum, true);
+        op_idx += lm32gdb_write_mem(fd, cpu, cmd, cmdlen, &op_buf[op_idx], checksum, tcp_connection, true);
         break;
 
     // Write memory
     case 'M':
-        op_idx += lm32gdb_write_mem(fd, cpu, cmd, cmdlen, &op_buf[op_idx], checksum, false);
+        op_idx += lm32gdb_write_mem(fd, cpu, cmd, cmdlen, &op_buf[op_idx], checksum, tcp_connection, false);
         break;
 
     // Continue
@@ -1045,7 +1137,7 @@ static bool lm32gdb_proc_gdb_cmd (lm32_cpu* cpu, const char* cmd, const int cmdl
         // Output the response for the gdb command to the terminal
         for (int idx = 0; idx < op_idx; idx++)
         {
-            if (!lm32gdb_write(fd, &op_buf[idx]))
+            if (!lm32gdb_write(fd, &op_buf[idx], tcp_connection))
             {
                 fprintf(stderr, "LM32GDB: ERROR writing to host: terminating.\n");
                 return true;
@@ -1062,6 +1154,84 @@ static bool lm32gdb_proc_gdb_cmd (lm32_cpu* cpu, const char* cmd, const int cmdl
 }
 
 // -------------------------------------------------------------------------
+// lm32_connect_skt()
+//
+// Opens a TCP socket connection, suitable for GDB remote debugging, on the
+// given port number (portno). It listens for a single connection, before
+// returning the connection handle established. If any error occurs,
+// LM32GDB_ERR is returned instead.
+//
+// -------------------------------------------------------------------------
+
+static lm32gdb_skt_t lm32gdb_connect_skt (const int portno)
+{    
+    // Initialise socket environment
+    if (lm32gdb_skt_init() < 0)
+    {
+        return LM32GDB_ERR;
+    }
+    
+    // Create an IPv4 socket byte stream
+    lm32gdb_skt_t svrskt;
+    if ((svrskt = socket(AF_INET, SOCK_STREAM, IPPROTO_IP)) < 0)
+    {
+        fprintf(stderr, "ERROR opening socket (%ld)\n", svrskt);
+        lm32gdb_skt_cleanup();
+        return LM32GDB_ERR;
+    }
+    
+    // Create and zero a server address structure
+    struct sockaddr_in serv_addr;
+    ZeroMemory((char *) &serv_addr, sizeof(serv_addr));
+    
+    // Configure the server address structure
+    serv_addr.sin_family      = AF_INET;
+    serv_addr.sin_addr.s_addr = INADDR_ANY;
+    serv_addr.sin_port        = htons(portno);
+    
+    // Bind the socket to the address
+    int status = bind(svrskt, (struct sockaddr *) &serv_addr, sizeof(serv_addr));
+    if (status < 0)
+    {
+        fprintf(stderr, "ERROR on Binding: %d\n", status);
+        lm32gdb_skt_cleanup();
+        return LM32GDB_ERR;
+    }
+
+    // Advertise the port number
+    fprintf(stderr, "LM32GDB: Using TCP port number: %d\n", portno);
+    fflush(stderr);
+    
+    // Listen for connections (blocking)
+    if (int status = listen(svrskt, MAXBACKLOG) < 0)
+    {
+        fprintf(stderr, "ERROR on listening: %d\n", status);
+        lm32gdb_skt_cleanup();
+        return LM32GDB_ERR;
+    }
+    
+    // Get a client address structure, and length as has to be passed as a pointer to accept()
+    struct sockaddr_in cli_addr;  
+    socklen_t clilen = sizeof(cli_addr);
+    
+    // Accept a connection, and get returned handle
+    lm32gdb_skt_t cliskt;
+    if ((cliskt = accept(svrskt, (struct sockaddr *) &cli_addr,  &clilen)) < 0)
+    {         
+        fprintf(stderr, "ERROR on accept\n");
+        lm32gdb_skt_cleanup();
+        return LM32GDB_ERR;
+    }
+    
+    // No longer need the server side (listening) socket
+    closesocket(svrskt);
+    
+    // Return the handle to the connected socket. With this handle can
+    // use recv()/send() to read and write (or, Linux only, read()/write()).
+    return cliskt;
+}
+
+// -------------------------------------------------------------------------
 // lm32gdb_create_pty()
 //
 // Opens a pseudo/virtual serial connection, suitable for GDB remote
@@ -1075,29 +1245,30 @@ static bool lm32gdb_proc_gdb_cmd (lm32_cpu* cpu, const char* cmd, const int cmdl
 //
 // -------------------------------------------------------------------------
 
-static int lm32gdb_create_pty(PTY_HDL &pty_fd, int port_num)
+static int lm32gdb_create_pty(PTY_HDL* pty_fd, int port_num)
 {
 #if !(defined(_WIN32) || defined(_WIN64))
 
     struct termios tio;
+    int fd;
 
     // Create and open a pseudo-terminal for reads and writes (and not this process's console)
-    if ((pty_fd = open(PTY_MASTER_DEVICE, O_RDWR | O_NOCTTY)) == PTY_ERROR)
+    if ((fd = open(PTY_MASTER_DEVICE, O_RDWR | O_NOCTTY)) == PTY_ERROR)
     {
         return PTY_ERROR;
     }
 
     // Grant slave access to terminal
-    grantpt(pty_fd);
+    grantpt(fd);
 
     // Unlock it so slaves can open
-    unlockpt(pty_fd);
+    unlockpt(fd);
 
     // Advertise the pseudo-terminal being used
-    fprintf(stderr, "LM32GDB: Using pseudo-terminal %s\n", ptsname(pty_fd));
+    fprintf(stderr, "LM32GDB: Using pseudo-terminal %s\n", ptsname(fd));
 
     // Get the serial port parameters
-    tcgetattr(pty_fd, &tio);
+    tcgetattr(fd, &tio);
 
     // Change settings for our needs
     tio.c_cflag     = BAUDRATE | CS8 | CLOCAL | CREAD;
@@ -1108,16 +1279,18 @@ static int lm32gdb_create_pty(PTY_HDL &pty_fd, int port_num)
     tio.c_cc[VTIME] = 0;
 
     // Clear out any rubbish in the input that might have arrived already
-    tcflush(pty_fd, TCIFLUSH);
+    tcflush(fd, TCIFLUSH);
 
     // Set the input and output BAUD rate in the structure
     cfsetispeed(&tio, BAUDRATE);
     cfsetospeed(&tio, BAUDRATE);
 
     // Update the attributes of the terminal (immediately)
-    tcsetattr(pty_fd, TCSANOW, &tio);
+    tcsetattr(fd, TCSANOW, &tio);
 
-    return pty_fd;
+    *pty_fd = (PTY_HDL)fd;
+
+    return fd;
 
 #else
 
@@ -1134,13 +1307,13 @@ static int lm32gdb_create_pty(PTY_HDL &pty_fd, int port_num)
     sprintf(comm_port, "COM%d", port_num);
 
     //  Open a handle to the specified com port.
-    pty_fd = CreateFile(comm_port,
-                        GENERIC_READ | GENERIC_WRITE,
-                        0,                               // must be opened with exclusive-access
-                        NULL,                            // default security attributes
-                        OPEN_EXISTING,                   // must use OPEN_EXISTING
-                        0,                               // not overlapped I/O
-                        NULL );                          // hTemplate must be NULL for comm devices
+    *pty_fd = CreateFile(comm_port,
+                         GENERIC_READ | GENERIC_WRITE,
+                         0,                               // must be opened with exclusive-access
+                         NULL,                            // default security attributes
+                         OPEN_EXISTING,                   // must use OPEN_EXISTING
+                         0,                               // not overlapped I/O
+                         NULL );                          // hTemplate must be NULL for comm devices
 
     if (pty_fd == INVALID_HANDLE_VALUE) 
     {
@@ -1201,22 +1374,35 @@ static int lm32gdb_create_pty(PTY_HDL &pty_fd, int port_num)
 //
 // -------------------------------------------------------------------------
 
-int lm32gdb_process_gdb (lm32_cpu* cpu, int port_num) 
+int lm32gdb_process_gdb (lm32_cpu* cpu, int port_num, bool tcp_connection) 
 {
-    int     idx      = 0;
-    bool    active   = false;
-    bool    detached = false;
-    bool    waiting  = true;
-    char    ipbyte;
-    PTY_HDL pty_fd;
+    int   idx      = 0;
+    bool  active   = false;
+    bool  detached = false;
+    bool  waiting  = true;
+    char  ipbyte;
+    void* pty_fd;
 
-    // Create a pseudo-terminal to use
-    if (lm32gdb_create_pty(pty_fd, port_num) == PTY_ERROR)
+    if (tcp_connection)
     {
-        return PTY_ERROR;
+        // Create a TCP/IP socket
+        if ((pty_fd = (void *)lm32gdb_connect_skt(port_num)) < 0)
+        {
+            return PTY_ERROR;
+        }
+    }
+    else
+    {
+        // Create a pseudo-terminal to use
+        PTY_HDL fd;
+        if (lm32gdb_create_pty(&fd, port_num) == PTY_ERROR)
+        {
+            return PTY_ERROR;
+        }
+        pty_fd = (void *) fd;
     }
     
-    while (!detached && lm32gdb_read(pty_fd, &ipbyte))
+    while (!detached && lm32gdb_read(pty_fd, &ipbyte, tcp_connection))
     {
         // If waiting for first communication, flag that attachment has happened.
         if (waiting)
@@ -1232,7 +1418,7 @@ int lm32gdb_process_gdb (lm32_cpu* cpu, int port_num)
                        (ipbyte == GDB_MEM_DELIM_CHAR && (ip_buf[0] == 'X' || ip_buf[0] == 'M'))))
         {
             // Acknowledge the packet
-            if (!lm32gdb_write(pty_fd, &ack_char))
+            if (!lm32gdb_write(pty_fd, &ack_char, tcp_connection))
             {
                 return LM32GDB_ERR;
             }
@@ -1241,7 +1427,7 @@ int lm32gdb_process_gdb (lm32_cpu* cpu, int port_num)
             ip_buf[idx] = 0;
 
             // Process the command
-            detached = lm32gdb_proc_gdb_cmd(cpu, ip_buf, idx, pty_fd);
+            detached = lm32gdb_proc_gdb_cmd(cpu, ip_buf, idx, pty_fd, tcp_connection);
 
             // Flag state as inactive
             active = false;
@@ -1280,6 +1466,12 @@ int lm32gdb_process_gdb (lm32_cpu* cpu, int port_num)
     else
     {
         fprintf(stderr, "LM32GDB: connection lost to host: terminating.\n");
+    }
+
+    // Close socket if a TCP connection
+    if (tcp_connection)
+    {        
+        closesocket((lm32gdb_skt_t)pty_fd);
     }
     return LM32GDB_OK;
 }

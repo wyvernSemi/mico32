@@ -5,7 +5,7 @@
 cpumico32 \- LatticeMico32 instruction set simulator
 .SH SYNOPSIS
 .B cpumico32 
-[-g] [-G <num>] [-v] [-x] [-d] [-D] [-I] [-n <num>] [-b <addr>]
+[-g] [-t] [-G <num>] [-v] [-x] [-d] [-D] [-I] [-n <num>] [-b <addr>]
           [-r <addr>] [-R <#bytes>] [-f <fname>] [-m <#bytes>] 
           [-o <addr>] [-e <addr>] [-l <fname>] [-c <cfg_word> ] 
           [-w <waits>] [-i <fname>] [-T]
@@ -129,13 +129,18 @@ LatticeMico32 Processor Reference Manual.
 .TP 5
 .B -g 
 Run the program in GDB remote debug mode. The program will open a pseudo
-terminal and print the device path, which gdb can the attach to as a remote target.
+terminal and print the device path or TCP port number, which gdb can the attach to as a remote target.
 The CPU does not start executing, and this is controlled from within GDB once
 connection is established. Default is non-debugging.
 .TP 5
-.B -G " num" 
-Specify the COM port number to use for GDB remote debugging (Windows only). 
-This option also enables GDB debug mode, as for -g option. Default is 6.
+.BI -G " num" 
+Specify the COM or TCP port number to use for GDB remote debugging. 
+This option also enables GDB debug mode, as for -g option. It is
+ignored under Linux when not in TCP mode (see -t option). Default is 6.
+.TP 5
+.B -t
+Specify TCP socket connection for GDB remote debug.
+This option also enables GDB debug mode, as for -g option. Default is a COM/pty serial connection.
 .TP 5
 .BI -n " num"
 Specify number of instructions to run. Default is to run forever

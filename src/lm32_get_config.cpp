@@ -22,7 +22,7 @@
 // You should have received a copy of the GNU General Public License
 // along with cpumico32. If not, see <http://www.gnu.org/licenses/>.
 //
-// $Id: lm32_get_config.cpp,v 3.7 2017/04/11 12:31:27 simon Exp $
+// $Id: lm32_get_config.cpp,v 3.10 2017/04/20 09:01:29 simon Exp $
 // $Source: /home/simon/CVS/src/cpu/mico32/src/lm32_get_config.cpp,v $
 //
 //=============================================================
@@ -55,30 +55,22 @@ extern int optind;
 #define LM32_COMMON_ARGS               "hl:r:R:DIc:i:"
 #define LM32_CPUMICO32_ARGS            "f:m:o:e:T"
 #define LM32_LNXMICO32_ARGS            "s:SL"
-#define LM32_NON_FAST_ARGS             "gn:vxb:dw:"
+#define LM32_NON_FAST_ARGS             "n:vxb:dw:"
 #define LM32_LNX_NON_FAST_ARGS         "V:"
-#define LM32_WIN_DBG_ARGS              "G:"
+#define LM32_DBG_ARGS                  "gtG:"
 
 // Construct the getopt arguments specification string based on the compile options
 # ifdef LNXMICO32
 #  ifdef LM32_FAST_COMPILE
-#   define  LM32_GETOPT_ARG_STR LM32_COMMON_ARGS LM32_LNXMICO32_ARGS
+#   define LM32_GETOPT_ARG_STR LM32_COMMON_ARGS LM32_LNXMICO32_ARGS
 #  else
-#   if !(defined _WIN32) && !(defined _WIN64)
-#    define LM32_GETOPT_ARG_STR LM32_COMMON_ARGS LM32_LNXMICO32_ARGS LM32_NON_FAST_ARGS LM32_LNX_NON_FAST_ARGS
-#   else
-#    define LM32_GETOPT_ARG_STR LM32_COMMON_ARGS LM32_LNXMICO32_ARGS LM32_NON_FAST_ARGS LM32_LNX_NON_FAST_ARGS LM32_WIN_DBG_ARGS
-#   endif
+#   define LM32_GETOPT_ARG_STR LM32_COMMON_ARGS LM32_LNXMICO32_ARGS LM32_NON_FAST_ARGS LM32_DBG_ARGS LM32_LNX_NON_FAST_ARGS 
 #  endif
 # else
 #  ifdef LM32_FAST_COMPILE
-#   define  LM32_GETOPT_ARG_STR LM32_COMMON_ARGS LM32_CPUMICO32_ARGS
+#   define LM32_GETOPT_ARG_STR LM32_COMMON_ARGS LM32_CPUMICO32_ARGS
 #  else
-#   if !(defined _WIN32) && !(defined _WIN64)
-#    define LM32_GETOPT_ARG_STR LM32_COMMON_ARGS LM32_CPUMICO32_ARGS LM32_NON_FAST_ARGS
-#   else
-#    define LM32_GETOPT_ARG_STR LM32_COMMON_ARGS LM32_CPUMICO32_ARGS LM32_NON_FAST_ARGS LM32_WIN_DBG_ARGS
-#   endif
+#   define LM32_GETOPT_ARG_STR LM32_COMMON_ARGS LM32_CPUMICO32_ARGS LM32_NON_FAST_ARGS LM32_DBG_ARGS
 #  endif
 #endif
 
@@ -241,7 +233,12 @@ extern "C" lm32_config_t* lm32_get_config(int argc, char** argv, const char* def
     lm32_cpu_cfg.save_state_file                 = false;
     lm32_cpu_cfg.load_state_file                 = false;
     lm32_cpu_cfg.gdb_run                         = false;
+#if !(defined _WIN32) && !(defined _WIN64)    
+    lm32_cpu_cfg.com_port_num                    = LM32_DEFAULT_TCP_PORT;
+#else
     lm32_cpu_cfg.com_port_num                    = LM32_DEFAULT_COM_PORT;
+#endif    
+    lm32_cpu_cfg.use_tcp_skt                     = false;
 
     lm32_cpu_cfg.dcache_cfg.cache_base_addr      = LM32_CACHE_DEFAULT_BASE;
     lm32_cpu_cfg.dcache_cfg.cache_limit          = LM32_CACHE_DEFAULT_DLIMIT;
@@ -271,11 +268,7 @@ extern "C" lm32_config_t* lm32_get_config(int argc, char** argv, const char* def
             fprintf(stderr,
                     "Usage: %s [-h] "
 #ifndef LM32_FAST_COMPILE
-                    "[-g] "
-# if defined _WIN32 || defined _WIN64
-                    "[-G <COM #>] "
-# endif
-                    "[-v] [-x] [-d] "
+                    "[-g] [-t] [-G <port #>] [-v] [-x] [-d] "
 #endif
                     "[-D] [-I] "
                     "\n         "
@@ -308,9 +301,12 @@ extern "C" lm32_config_t* lm32_get_config(int argc, char** argv, const char* def
                     "    -h Display this help message\n"
 #ifndef LM32_FAST_COMPILE
                     "    -g Start up in GDB remote debug mode (default: off)\n"
-# if defined _WIN32 || defined _WIN64
-                    "    -G Specify COM port to use for GDB remote debug (default: %d)\n"
-# endif
+                    "    -t Specify TCP socket connection for GDB remote debug (default: COM/pty connection)\n"
+                    "    -G Specify TCP "
+#if (defined _WIN32) || (defined _WIN64)
+                    "COM "
+#endif                    
+                    "port to use for GDB remote debug (default: %d)\n"
                     "    -n Specify number of instructions to run (default: run forever)\n"
                     "    -b Specify address for breakpoint (default: none)\n"
 #endif
@@ -349,9 +345,13 @@ extern "C" lm32_config_t* lm32_get_config(int argc, char** argv, const char* def
 #endif
                     "\n"
                     , argv[0]
-#if defined _WIN32 || defined _WIN64
+#ifndef LM32_FAST_COMPILE
+#if !(defined _WIN32) && !(defined _WIN64)
+                    , LM32_DEFAULT_TCP_PORT
+#else                    
                     , LM32_DEFAULT_COM_PORT
-#endif
+#endif                    
+#endif                    
 #ifndef LNXMICO32
                     , LM32_DEFAULT_FNAME, LM32_DEFAULT_MEM_SIZE
 #endif
@@ -608,14 +608,18 @@ extern "C" lm32_config_t* lm32_get_config(int argc, char** argv, const char* def
             lm32_cpu_cfg.gdb_run = true;
             break;
 
-# if defined(_WIN32) || defined(_WIN64)
+        case 't':
+            lm32_cpu_cfg.use_tcp_skt = true;
+            lm32_cpu_cfg.gdb_run = true;
+            break;
+
         // In windows, need a means to specify COM port to use, as not created by the program
-        // (like a pseudo terminal in Linux)
+        // (like a pseudo terminal in Linux), or the TCP socket port number, if -t selected.
         case 'G':
             lm32_cpu_cfg.gdb_run = true;
             lm32_cpu_cfg.com_port_num = strtol(optarg, NULL, 0);
             break;
-#endif
+
         case 'n':
             lm32_cpu_cfg.num_run_instructions = strtol(optarg, NULL, 0);
             if (lm32_cpu_cfg.num_run_instructions < LM32_FOREVER)

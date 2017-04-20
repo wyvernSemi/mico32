@@ -19,7 +19,7 @@
 // You should have received a copy of the GNU General Public License
 // along with cpumico32. If not, see <http://www.gnu.org/licenses/>.
 //
-// $Id: lm32_gdb.h,v 3.3 2017/04/10 13:19:29 simon Exp $
+// $Id: lm32_gdb.h,v 3.5 2017/04/20 09:00:05 simon Exp $
 // $Source: /home/simon/CVS/src/cpu/mico32/src/lm32_gdb.h,v $
 //
 //=============================================================
@@ -37,13 +37,16 @@
 // DEFINES
 // -------------------------------------------------------------------------
 
-#if !(defined(_WIN32) || defined(_WIN64))
+#if defined (_WIN32) || defined (_WIN64)
 
-#include <termios.h>
-# define BAUDRATE             B19200
-# define PTY_MASTER_DEVICE    "/dev/ptmx"
-# define PTY_HDL              int
-#else
+// -------------------------------------------------------------------------
+// DEFINITIONS (windows)
+// -------------------------------------------------------------------------
+
+// Define the max supported winsocket spec. major and minor numbers
+# define VER_MAJOR           2
+# define VER_MINOR           2
+
 // Map some signals undefined in windows to linux values
 # define SIGTRAP              5
 # define SIGHUP               1
@@ -51,6 +54,35 @@
 # define BAUDRATE             CBR_19200
 # define PTY_MASTER_DEVICE    LM32_DEFAULT_COM_PORT
 # define PTY_HDL              HANDLE
+
+// -------------------------------------------------------------------------
+// TYPEDEFS (windows)
+// -------------------------------------------------------------------------
+
+// Map the socket type for windows  
+typedef SOCKET lm32gdb_skt_t;
+    
+#else
+    
+// -------------------------------------------------------------------------
+// TYPEDEFS (Linux)
+// -------------------------------------------------------------------------
+
+// Map the socket type for Linux  
+typedef long lm32gdb_skt_t;
+
+// -------------------------------------------------------------------------
+// DEFINITIONS (Linux)
+// -------------------------------------------------------------------------
+
+# define BAUDRATE             B19200
+# define PTY_MASTER_DEVICE    "/dev/ptmx"
+# define PTY_HDL              lm32gdb_skt_t
+
+// Map some windows function names to the file access Linux equivalents
+# define closesocket         close
+# define ZeroMemory          bzero
+
 #endif
 
 #define LM32GDB_OK            0
@@ -70,6 +102,9 @@
                                '4', '5', '6', '7', \
                                '8', '9', 'a', 'b', \
                                'c', 'd', 'e', 'f'}
+
+
+#define MAXBACKLOG            5
 
 // -------------------------------------------------------------------------
 // MACRO DEFINITIONS
@@ -123,6 +158,6 @@ enum lm32gdb_regs_e
 // PUBLIC PROTOTYPES
 // -------------------------------------------------------------------------
 
-extern int lm32gdb_process_gdb (lm32_cpu* cpu, int port_num = LM32_DEFAULT_COM_PORT);
+extern int lm32gdb_process_gdb (lm32_cpu* cpu, int port_num = LM32_DEFAULT_COM_PORT, bool tcp_connection = false);
 
 #endif   

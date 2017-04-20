@@ -23,7 +23,7 @@
 // You should have received a copy of the GNU General Public License
 // along with cpumico32. If not, see <http://www.gnu.org/licenses/>.
 //
-// $Id: cpumico32.cpp,v 3.6 2017/04/14 09:47:02 simon Exp $
+// $Id: cpumico32.cpp,v 3.7 2017/04/19 13:22:02 simon Exp $
 // $Source: /home/simon/CVS/src/cpu/mico32/src/cpumico32.cpp,v $
 //
 //=============================================================
@@ -37,10 +37,6 @@
 #include <cstring>
 #include <stdint.h>
 
-#include "lm32_cpu.h"
-#include "lm32_get_config.h"
-#include "lm32_gdb.h"
-
 #if !defined _WIN32 && !defined _WIN64
 #include <unistd.h>
 #else 
@@ -48,7 +44,12 @@ extern "C" {
 extern int getopt(int nargc, char** nargv, char* ostr);
 extern char* optarg;
 }
+#include <Windows.h>
 #endif
+
+#include "lm32_cpu.h"
+#include "lm32_get_config.h"
+#include "lm32_gdb.h"
 
 // -------------------------------------------------------------------------
 // DEFINES
@@ -207,7 +208,7 @@ int main (int argc, char** argv)
     else
     {
         // Start procssing commands from GDB
-        if (lm32gdb_process_gdb(cpu, p_cfg->com_port_num))
+        if (lm32gdb_process_gdb(cpu, p_cfg->com_port_num, p_cfg->use_tcp_skt))
         {
             fprintf(stderr, "***ERROR in opening PTY\n");
             return -1;

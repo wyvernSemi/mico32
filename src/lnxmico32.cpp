@@ -21,7 +21,7 @@
 // You should have received a copy of the GNU General Public License
 // along with lnxmico32. If not, see <http://www.gnu.org/licenses/>.
 //
-// $Id: lnxmico32.cpp,v 3.5 2017/04/10 13:19:29 simon Exp $
+// $Id: lnxmico32.cpp,v 3.6 2017/04/19 13:22:02 simon Exp $
 // $Source: /home/simon/CVS/src/cpu/mico32/src/lnxmico32.cpp,v $
 //
 //=============================================================
@@ -673,7 +673,7 @@ int main (int argc, char** argv)
     else
     {
         // Start procssing commands from GDB
-        if (lm32gdb_process_gdb(cpu, p_cfg->com_port_num))
+        if (lm32gdb_process_gdb(cpu, p_cfg->com_port_num, p_cfg->use_tcp_skt))
         {
             fprintf(stderr, "***ERROR in opening PTY\n");
             return -1;

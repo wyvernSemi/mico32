@@ -24,7 +24,7 @@
 #  You should have received a copy of the GNU General Public License
 #  along with this file. If not, see <http://www.gnu.org/licenses/>.
 #  
-#  $Id: lm32.py,v 1.6 2017/04/05 13:27:16 simon Exp $
+#  $Id: lm32.py,v 1.8 2017/04/20 08:51:34 simon Exp $
 #  $Source: /home/simon/CVS/src/cpu/mico32/python/lm32.py,v $
 #                                                                       
 # =======================================================================
@@ -42,8 +42,6 @@ from tkinter.ttk  import *
 # Only promote what's used from the support libraries
 from tkinter.filedialog import askopenfilename, askdirectory
 from tkinter.messagebox import showinfo, showerror
-
-from threading import Timer
 
 # ----------------------------------------------------------------
 # Define lm32Stdout class to replace standard output IO.
@@ -248,6 +246,7 @@ class lm32GuiBase :
   _LM32DEFAULTverbose            = 0
   _LM32DEFAULTenablecb           = 0
   _LM32DEFAULTdisablebreakonlock = 0
+  _LM32DEFAULTenabletcp          = 0
   _LM32DEFAULTmemsize            = '65536'
   _LM32DEFAULTmemoffset          = '0'
   _LM32DEFAULTmemaddr            = '0'
@@ -261,8 +260,9 @@ class lm32GuiBase :
   _LM32DEFAULTlogfile            = 'stdout'
   _LM32DEFAULTexecfolder         = '<PATH>'
   _LM32DEFAULTcomport            = '6'
+  _LM32DEFAULTtcpport            = '49152' # Firt non-registerable port number (2^15 + 2^14)
 
-    # ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+  # ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
   # Utility functions
   # ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
@@ -350,6 +350,7 @@ class lm32gui (lm32GuiBase, wyTkinterUtils):
     self.verbose            = IntVar()
     self.enablecb           = IntVar()
     self.disablebreakonlock = IntVar()
+    self.enabletcp          = IntVar()
     self.comport            = StringVar()
     self.memsize            = StringVar()
     self.memoffset          = StringVar()
@@ -411,6 +412,7 @@ class lm32gui (lm32GuiBase, wyTkinterUtils):
     self.verbose.set            (lm32gui._LM32DEFAULTverbose           )
     self.enablecb.set           (lm32gui._LM32DEFAULTenablecb          )
     self.disablebreakonlock.set (lm32gui._LM32DEFAULTdisablebreakonlock)
+    self.enabletcp.set          (lm32gui._LM32DEFAULTenabletcp         )
     self.comport.set            (lm32gui._LM32DEFAULTcomport           )
     self.memsize.set            (lm32gui._LM32DEFAULTmemsize           )
     self.memoffset.set          (lm32gui._LM32DEFAULTmemoffset         )
@@ -583,6 +585,16 @@ class lm32gui (lm32GuiBase, wyTkinterUtils):
       self.dbhdl.config(state = DISABLED)
     else :
       self.dbhdl.config(state = NORMAL)
+
+  # __lm32TcpUpdated()
+  #
+  # Callback if TCP gdb debug changed.
+  #
+  def __lm32TcpUpdated(self, object, lstidx, mode) :
+    if self.enabletcp.get() == 0 :
+      self.comport.set(self._LM32DEFAULTcomport)
+    else :
+      self.comport.set(self._LM32DEFAULTtcpport)
  
   # __lm32DebugCmd()
   #
@@ -621,8 +633,11 @@ class lm32gui (lm32GuiBase, wyTkinterUtils):
     
     flagstr = ''
 
-    # GDB debugging
-    if self.gdb.get() != 0 :
+    # TCP debugging enable (if gdb set)
+    if self.enabletcp.get() != 0 and self.gdb.get() != 0 :
+      flagstr += 't'
+    # GDB debugging (only if -t not specified)
+    elif self.gdb.get() != 0 :
       flagstr += 'g'
 
     # Dump regs
@@ -736,13 +751,14 @@ class lm32gui (lm32GuiBase, wyTkinterUtils):
         showerror('Error', 'Invalid breakpoint addr setting')
         return
 
-    # For windows only, generate a COM port number argument
-    if os.name == 'nt' :
-      valstr = self.comport.get()
-      if self._lm32CheckStringNum(valstr, 0, 0xff, rtnlist) != False :
+    # Generate a port number argument. Only add the argument for TCP
+    # enabled (-t) or -g specified on windows.
+    valstr = self.comport.get()
+    if self.enabletcp.get() != 0 or (os.name != 'nt' and self.gdb.get() != 0) :
+      if self._lm32CheckStringNum(valstr, 0, 0xffff, rtnlist) != False :
         cmdstr += '-G ' + valstr + ' '
       else :
-        showerror('Error', 'Invalid COM port')
+        showerror('Error', 'Invalid port number')
         return
         
     # -----------------------------------------------
@@ -880,10 +896,14 @@ class lm32gui (lm32GuiBase, wyTkinterUtils):
     tupleList = [
       [('Dump registers',            self.dumpregs,    1), ('Dump # instructions',   self.dumpnuminstr,       1)],
       [('Disassemble',               self.disassemble, 1), ('Verbose',               self.verbose,            1)],
-      [('Enable Internal callbacks', self.enablecb,    1), ('Disable Break on Lock', self.disablebreakonlock, 1)]
+      [('Enable Internal callbacks', self.enablecb,    1), ('Disable Break on Lock', self.disablebreakonlock, 1)],
+      [('TCP gdb connection',        self.enabletcp,   1)]
     ]
     self.addCheckButtonRows('', tupleList, flagsframe)
     flagsframe.grid(row = framerow, padx = 10, pady = 10, sticky = W)
+
+    # Add a trace on the TCP enable variable
+    self.enabletcp.trace('w', self.__lm32TcpUpdated)
     
     # Add Image in next column. Image file expected to be in same location
     # as the script.
@@ -901,11 +921,9 @@ class lm32gui (lm32GuiBase, wyTkinterUtils):
     tupleList = [
       [('Mem size',      self.memsize, 10),('Mem offset',   self.memoffset, 10),('Mem Entry Addr',  self.memaddr,  10)],
       [('# Run Instr\'s',self.numinstr,10),('Dump Addr',    self.dumpaddr,  10),('# Dump Bytes',    self.dumpbytes,10)],
-      [('CFG register',  self.cfgword, 10),('Int mem waits',self.waitstates,10),('Break point addr',self.bpaddr,   10)]
+      [('CFG register',  self.cfgword, 10),('Int mem waits',self.waitstates,10),('Break point addr',self.bpaddr,   10)],
+      [('Debug port #',  self.comport, 10)]
     ]
-
-    if os.name == 'nt' :
-      tupleList.append([('COM port #', self.comport,10)])
 
     hdls = self.addEntryRows('', tupleList, entryframe)
     
@@ -960,7 +978,7 @@ class lm32gui (lm32GuiBase, wyTkinterUtils):
     execframe = Frame(master = self.root)
     Button(master = execframe, text = 'Run',   command = self.__lm32RunCmd).grid   (row = 0, column = 0, padx=10)
 
-    # Add a 'Debug' button (if not windows or cygwin)
+    # Add a 'Debug' button
     dbghdl = Button(master = execframe, text = 'Debug', command = self.__lm32DebugCmd)
     dbghdl.grid (row = 0, column = 1, padx=10)          
     
