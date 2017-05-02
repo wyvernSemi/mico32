@@ -19,7 +19,7 @@
 // You should have received a copy of the GNU General Public License
 // along with cpumico32. If not, see <http://www.gnu.org/licenses/>.
 //
-// $Id: lm32_gdb.cpp,v 3.8 2017/04/20 09:02:48 simon Exp $
+// $Id: lm32_gdb.cpp,v 3.9 2017/05/02 10:59:41 simon Exp $
 // $Source: /home/simon/CVS/src/cpu/mico32/src/lm32_gdb.cpp,v $
 //
 //=============================================================
@@ -1315,7 +1315,7 @@ static int lm32gdb_create_pty(PTY_HDL* pty_fd, int port_num)
                          0,                               // not overlapped I/O
                          NULL );                          // hTemplate must be NULL for comm devices
 
-    if (pty_fd == INVALID_HANDLE_VALUE) 
+    if (*pty_fd == INVALID_HANDLE_VALUE) 
     {
         fprintf (stderr, "LM32GDB: CreateFile failed with error %d.\n", GetLastError());
         return PTY_ERROR;
@@ -1326,7 +1326,7 @@ static int lm32gdb_create_pty(PTY_HDL* pty_fd, int port_num)
 
     // Build on the current configuration by first retrieving all current
     // settings.
-    if (!GetCommState(pty_fd, &dcb)) 
+    if (!GetCommState(*pty_fd, &dcb)) 
     {
        fprintf (stderr, "LM32GDB: GetCommState failed with error %d.\n", GetLastError());
        return PTY_ERROR;
@@ -1340,7 +1340,7 @@ static int lm32gdb_create_pty(PTY_HDL* pty_fd, int port_num)
     dcb.fDtrControl = 0;
     dcb.fRtsControl = 0;
 
-    if (!SetCommState(pty_fd, &dcb)) 
+    if (!SetCommState(*pty_fd, &dcb)) 
     {
        fprintf (stderr, "LM32GDB: SetCommState failed with error %d.\n", GetLastError());
        return PTY_ERROR;
