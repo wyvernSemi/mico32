@@ -1,10 +1,10 @@
 
 [Setup]
 AppName                 = CPUMICO32
-AppVerName              = CPUMICO32_3_10
+AppVerName              = CPUMICO32_3_11
 DefaultDirName          = {pf}\mico32
 DisableProgramGroupPage = yes
-OutputBaseFilename      = setup_cpumico32_3_10
+OutputBaseFilename      = setup_cpumico32_3_11
 
 [Dirs]
 Name: "{app}\obj"
@@ -113,3 +113,15 @@ Source: "test\instructions\template\test.s";           DestDir: "{app}\test\inst
 Source: "test\instructions\xor\test.s";                DestDir: "{app}\test\instructions\xor"
 Source: "test\speed\test.s";                           DestDir: "{app}\test\speed"
 
+; Driver code
+Source: "drivers\crt0.s";                              DestDir: "{app}\drivers"
+Source: "drivers\lm32_uart_driver.c";                  DestDir: "{app}\drivers"
+Source: "drivers\small_printf.c";                      DestDir: "{app}\drivers"
+Source: "drivers\small_printf.h";                      DestDir: "{app}\drivers"
+Source: "drivers\lnxram.ld";                           DestDir: "{app}\drivers"
+Source: "drivers\liblm32drivers.a";                    DestDir: "{app}\drivers"
+
+; Example code
+Source: "examples\simple_c\makefile";                  DestDir: "{app}\examples\simple_c"
+Source: "examples\simple_c\simple_c.c";                DestDir: "{app}\examples\simple_c"
+Source: "examples\simple_c\simple_c.elf";              DestDir: "{app}\examples\simple_c"

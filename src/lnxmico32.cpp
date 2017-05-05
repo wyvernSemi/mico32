@@ -21,7 +21,7 @@
 // You should have received a copy of the GNU General Public License
 // along with lnxmico32. If not, see <http://www.gnu.org/licenses/>.
 //
-// $Id: lnxmico32.cpp,v 3.6 2017/04/19 13:22:02 simon Exp $
+// $Id: lnxmico32.cpp,v 3.7 2017/05/05 14:27:58 simon Exp $
 // $Source: /home/simon/CVS/src/cpu/mico32/src/lnxmico32.cpp,v $
 //
 //=============================================================
@@ -589,14 +589,14 @@ int main (int argc, char** argv)
     FILE*          lfp = stdout;
 
     // Process command line and .ini file options
-    p_cfg = lm32_get_config(argc, argv, (const char *)"lnx.ini");
+    p_cfg = lm32_get_config(argc, argv, (const char *)"");
 
     // Open the logfile, if "stdout" not specified as the filename
     if (strcmp(p_cfg->log_fname, (char *)"stdout"))
     {
         if ((lfp = fopen(p_cfg->log_fname, "wb")) == NULL) 
         {
-            fprintf(stderr, "***ERROR: could not open log file %s for writeing\n", p_cfg->log_fname);
+            fprintf(stderr, "***ERROR: could not open log file %s for writing\n", p_cfg->log_fname);
             exit(LM32_USER_ERROR);
         }
     }
