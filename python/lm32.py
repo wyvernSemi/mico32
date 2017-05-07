@@ -54,6 +54,7 @@
 #  __lm32GetSav()                            --- Opens file dialog to specify save state file
 #
 # Tk variable updates:
+#  __lm32SaveStateUpdated()                  --- savestate or loadstate Tk variables updated callback
 #  __lm32DumpAddrUpdated()                   --- dumpaddr Tk variable update callback
 #  __lm32TcpUpdated()                        --- enabletcp Tk variable update callback
 #  __lm32CfgUpdated()                        --- Any of the CFG field Tk variables updated callback
@@ -486,6 +487,10 @@ class lm32gui (lm32GuiBase, wyTkinterUtils):
     # for use in blanking dump bytes when dump address not specified and
     # this disables feature
     self.dumpaddr.trace('w', self.__lm32DumpAddrUpdated)
+
+    # Bind a callback for changes to load/save state flags
+    self.savestate.trace('w', self.__lm32SaveStateUpdated)
+    self.loadstate.trace('w', self.__lm32SaveStateUpdated)
     
     # Convert CFG register default string to an integer
     cfg = int(self._LM32DEFAULTcfgword, 0)
@@ -644,6 +649,18 @@ class lm32gui (lm32GuiBase, wyTkinterUtils):
     # otherwise the checker fires an error when updating the box.
     if fname != '' :
       self.savfilename.set(os.path.relpath(fname, self.rundir.get()))
+
+  # __lm32SaveStateUpdated()
+  #
+  # Callback if save- or load-state flags change.
+  #
+  def __lm32SaveStateUpdated (self, object, lstidx, mode) :
+
+    # If both load and save state flags clear, disable save file entry
+    if self.savestate.get() == 0 and self.loadstate.get() == 0 :
+      self.hdlsave.config(state = DISABLED)
+    else :
+      self.hdlsave.config(state = NORMAL)
 
   # __lm32DumpAddrUpdated()
   #
@@ -966,7 +983,7 @@ class lm32gui (lm32GuiBase, wyTkinterUtils):
         cmdstr += '-f ' + valstr + ' '
 
     # Create a popup window for the output
-    txtframe, txthdl = self.__lm32CreateStdoutPopup()
+    txtframe, txthdl = self.__lm32CreateStdoutPopup(islnx)
 
     # Print the command string that we're about to execute for future reference
     print (cmdstr)
@@ -1160,9 +1177,15 @@ class lm32gui (lm32GuiBase, wyTkinterUtils):
 
     hdls = self.addFileEntryRows('', tupleList, fileframe)
 
-    # If not lnxmico32, disable the program file entry
     if not isLnx :
+      # If not lnxmico32, disable the program file entry
       hdls[4].config(state = DISABLED)
+    else :
+      # If lnxmico32 make available to callbacks the save file entry handle,
+      # and call the flag trace callback __lm32SaveStateUpdated() to set the
+      # correct disable/normal state.
+      self.hdlsave = hdls[4]
+      self.__lm32SaveStateUpdated(None, None, None)
     
     # Add utility file widgets frame in a new row, spanning all three columns
     framerow +=1
@@ -1263,7 +1286,7 @@ class lm32gui (lm32GuiBase, wyTkinterUtils):
   #
   # Create the cpumico32 run output pop up
   #
-  def __lm32CreateStdoutPopup (self) :
+  def __lm32CreateStdoutPopup (self, islnx) :
 
     curr_row = 0
 
@@ -1293,6 +1316,9 @@ class lm32gui (lm32GuiBase, wyTkinterUtils):
     # In the next row, add a close button
     btn = Button(master = toplevel, text = 'Close', command = toplevel.destroy)
     btn.grid(row = curr_row, column = 0, pady = 10)
+
+    if islnx :
+      toplevel.wm_state('iconic')
 
     return toplevel, txtbox
 
