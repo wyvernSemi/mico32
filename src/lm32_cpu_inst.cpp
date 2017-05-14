@@ -22,7 +22,7 @@
 // You should have received a copy of the GNU General Public License
 // along with cpumico32. If not, see <http://www.gnu.org/licenses/>.
 //
-// $Id: lm32_cpu_inst.cpp,v 3.2 2016/09/15 18:16:24 simon Exp $
+// $Id: lm32_cpu_inst.cpp,v 3.3 2017/05/13 10:45:19 simon Exp $
 // $Source: /home/simon/CVS/src/cpu/mico32/src/lm32_cpu_inst.cpp,v $
 //
 //=============================================================
@@ -915,12 +915,31 @@ void lm32_cpu::lm32_xori (const p_lm32_decode_t p)
 
 void lm32_cpu::lm32_b (const p_lm32_decode_t p)
 {
+#ifdef LM32_MMU
+    if ((state.psw & (1 << LM32_PSW_USR_BIT)) && (p->reg0_csr == BA_REG_IDX || p->reg0_csr == EA_REG_IDX))
+    {
+        state.int_flags |= (1 << INT_ID_PRIV_ACCESS);
+        return;
+    }
+#endif
+
     if (p->reg0_csr == BA_REG_IDX)
     {
-        state.ie = (state.ie & ~IE_IE_MASK) | ((state.ie & IE_BIE_MASK) ? IE_IE_MASK : 0);
-    } else if (p->reg0_csr == EA_REG_IDX)
+        state.ie  = (state.ie  & ~IE_IE_MASK)    | ((state.ie & IE_BIE_MASK)     ? IE_IE_MASK    : 0);
+#ifdef LM32_MMU
+        state.psw = (state.psw & ~IE_ITLBE_MASK) | ((state.psw & IE_BITLBE_MASK) ? IE_ITLBE_MASK : 0);
+        state.psw = (state.psw & ~IE_DTLBE_MASK) | ((state.psw & IE_BDTLBE_MASK) ? IE_DTLBE_MASK : 0);
+        state.psw = (state.psw & ~IE_USR_MASK)   | ((state.psw & IE_BUSR_MASK)   ? IE_USR_MASK   : 0);
+#endif
+    } 
+    else if (p->reg0_csr == EA_REG_IDX)
     {
         state.ie = (state.ie & ~IE_IE_MASK) | ((state.ie & IE_EIE_MASK) ? IE_IE_MASK : 0);
+#ifdef LM32_MMU
+        state.psw = (state.psw & ~IE_ITLBE_MASK) | ((state.psw & IE_EITLBE_MASK) ? IE_ITLBE_MASK : 0);
+        state.psw = (state.psw & ~IE_DTLBE_MASK) | ((state.psw & IE_EDTLBE_MASK) ? IE_DTLBE_MASK : 0);
+        state.psw = (state.psw & ~IE_USR_MASK)   | ((state.psw & IE_EUSR_MASK)   ? IE_USR_MASK   : 0);
+#endif
     }
     state.pc = state.r[p->reg0_csr];
 
@@ -1303,6 +1322,20 @@ void lm32_cpu::lm32_rcsr (const p_lm32_decode_t p)
         state.r[p->reg2]  = state.cc;
         break;
 
+#ifdef LM32_MMU
+    case LM32_CSR_ID_PSW:
+        state.r[p->reg2]  = state.psw | state.ie; // Bottom 3 bits of PSW a mirror of IE[2:0]
+        break;
+
+    case LM32_CSR_ID_TLBVADDR:
+        state.r[p->reg2]  = state.tlbvaddr;
+        break;
+
+    case LM32_CSR_ID_TLBBADVADDR:
+        state.r[p->reg2]  = state.tlbbadvaddr;
+        break;
+#endif
+
     default:
         fprintf(stderr, "***ERROR: invalid CSR index (%d)\n", p->reg0_csr); //LCOV_EXCL_LINE
         exit(LM32_INSTR_ERROR);                                             //LCOV_EXCL_LINE
@@ -1322,6 +1355,14 @@ void lm32_cpu::lm32_rcsr (const p_lm32_decode_t p)
 void lm32_cpu::lm32_wcsr (const p_lm32_decode_t p)
 {
     int num_ints;
+
+#ifdef LM32_MMU
+    if(state.psw & (1 << LM32_PSW_USR_BIT))
+    {
+        state.int_flags |= (1 << INT_ID_PRIV_ACCESS);
+        return;
+    }
+#endif
 
     switch(p->reg0_csr)
     {
@@ -1374,6 +1415,21 @@ void lm32_cpu::lm32_wcsr (const p_lm32_decode_t p)
         cc_adjust         = (lm32_time_t)state.r[p->reg1] - state.cycle_count;
         state.cc          = (state.cfg & (1 << LM32_CFG_CC)) ? state.r[p->reg1] : 0;
         break;
+
+#ifdef LM32_MMU
+    case LM32_CSR_ID_PSW:
+        state.psw         = state.r[p->reg1] & ~(0x00000007);
+        state.ie          = state.r[p->reg1] &   0x00000007; // Bottom 3 bits of PSW a mirror of IE[2:0]
+        break;
+
+    case LM32_CSR_ID_TLBVADDR:
+        tlb_vaddr_update(state.r[p->reg1]);
+        break;
+
+    case LM32_CSR_ID_TLBPADDR:
+        tlb_paddr_update(state.r[p->reg1]);
+        break;
+#endif
 
     default:
         fprintf(stderr, "***ERROR: invalid CSR index (%d)\n", p->reg0_csr); //LCOV_EXCL_LINE

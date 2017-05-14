@@ -22,7 +22,7 @@
 // You should have received a copy of the GNU General Public License
 // along with cpumico32. If not, see <http://www.gnu.org/licenses/>.
 //
-// $Id: lm32_cpu.h,v 3.4 2017/04/10 13:19:29 simon Exp $
+// $Id: lm32_cpu.h,v 3.5 2017/05/13 10:45:19 simon Exp $
 // $Source: /home/simon/CVS/src/cpu/mico32/src/lm32_cpu.h,v $
 //
 //=============================================================
@@ -40,6 +40,10 @@
 #include "lm32_cpu_hdr.h"
 #include "lm32_cache.h"
 #include "lm32_cpu_mico32.h"
+
+#ifdef LM32_MMU
+#include "lm32_tlb.h"
+#endif
 
 // -------------------------------------------------------------------------
 // DEFINES
@@ -85,6 +89,12 @@ public:
         uint32_t dcc;   // Data cache control
         uint32_t cfg;   // Configuration
         uint32_t cfg2;  // Extended configuration
+
+#ifdef LM32_MMU
+        uint32_t psw;
+        uint32_t tlbvaddr;
+        uint32_t tlbbadvaddr; // RO
+#endif
     
         // CC register not used directly in the model, but only here to allow 
         // returned state via lm32_get_cpu_state(). It is updated on calling 
@@ -164,10 +174,7 @@ public:
     LIBMICO32_API inline uint32_t lm32_read_instr            (const uint32_t byte_addr) { return SWAP(mem32[(byte_addr & LM32_RAM_MASK)>>2]);};
 
     LIBMICO32_API inline void     lm32_write_word            (const uint32_t byte_addr, const uint32_t data) {
-        if (byte_addr & LM32_PERIPH_MASK) 
-            lm32_write_mem(byte_addr, data, LM32_MEM_WR_ACCESS_WORD);
-        else
-            mem32[(byte_addr & LM32_RAM_MASK)>>2] = SWAP(data); 
+        lm32_write_mem(byte_addr, data, LM32_MEM_WR_ACCESS_WORD); 
     };
 
     LIBMICO32_API inline uint32_t lm32_read_hword            (const uint32_t byte_addr) {
@@ -176,10 +183,7 @@ public:
     };
 
     LIBMICO32_API inline void     lm32_write_hword           (const uint32_t byte_addr, const uint32_t data) {
-        if (byte_addr & LM32_PERIPH_MASK) 
-            lm32_write_mem(byte_addr, data, LM32_MEM_WR_ACCESS_HWORD);
-        else
-            mem16[(byte_addr & LM32_RAM_MASK)>>1] = SWAPHALF(data); 
+        lm32_write_mem(byte_addr, data, LM32_MEM_WR_ACCESS_HWORD);
     };
 
     LIBMICO32_API inline uint32_t lm32_read_byte             (const uint32_t byte_addr) {
@@ -188,10 +192,7 @@ public:
     };
 
     LIBMICO32_API inline void     lm32_write_byte            (const uint32_t byte_addr, const uint32_t data) {
-        if (byte_addr & LM32_PERIPH_MASK)  
             lm32_write_mem(byte_addr, data, LM32_MEM_WR_ACCESS_BYTE);
-        else
-            mem[byte_addr & LM32_RAM_MASK] = data; 
     };
 
 #endif
@@ -350,6 +351,12 @@ private:
     void        lm32_rcsr                      (const p_lm32_decode_t p);
     void        lm32_wcsr                      (const p_lm32_decode_t p);
 
+#ifdef LM32_MMU
+    lm32_tlb_status_e tlb_lookup (uint32_t &paddr, const uint32_t vaddr, const bool is_data, const bool is_write);
+    void tlb_vaddr_update        (uint32_t vaddr);
+    void tlb_paddr_update        (uint32_t paddr);
+#endif
+
 // Private model state
 private:
 
@@ -422,5 +429,10 @@ private:
     // Start address for dissassembling
     uint32_t                   disassemble_start;
     bool                       disassemble_active;
+
+#ifdef LM32_MMU
+    lm32_tbl_t                 dtlb;
+    lm32_tbl_t                 itlb;
+#endif
 };
 #endif

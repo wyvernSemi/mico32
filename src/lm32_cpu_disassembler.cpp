@@ -21,7 +21,7 @@
 // You should have received a copy of the GNU General Public License
 // along with cpumico32. If not, see <http://www.gnu.org/licenses/>.
 //
-// $Id: lm32_cpu_disassembler.cpp,v 3.1 2016/09/15 18:12:36 simon Exp $
+// $Id: lm32_cpu_disassembler.cpp,v 3.2 2017/05/14 05:18:42 simon Exp $
 // $Source: /home/simon/CVS/src/cpu/mico32/src/lm32_cpu_disassembler.cpp,v $
 //
 //=============================================================
@@ -97,6 +97,15 @@ void lm32_cpu::lm32_dump_registers()
     fprintf(ofp, "deba = 0x%08x ",  state.deba);
 
     fprintf(ofp, "\n");
+
+    #if LM32_MMU
+    fprintf(ofp, "\n");
+    fprintf(ofp, "psw = 0x%08x ",    state.psw);
+    fprintf(ofp, "tlbvaddr = 0x%08x ",  state.tlbvaddr);
+    fprintf(ofp, "tlbbadvaddr = 0x%08x\n",  state.tlbbadvaddr);
+
+    fprintf(ofp, "\n");
+#endif
 }
 
 // -------------------------------------------------------------------------

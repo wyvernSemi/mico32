@@ -1,10 +1,10 @@
 
 [Setup]
 AppName                 = CPUMICO32
-AppVerName              = CPUMICO32_3_11
+AppVerName              = CPUMICO32_3_12
 DefaultDirName          = {pf}\mico32
 DisableProgramGroupPage = yes
-OutputBaseFilename      = setup_cpumico32_3_11
+OutputBaseFilename      = setup_cpumico32_3_12
 
 [Dirs]
 Name: "{app}\obj"
@@ -62,6 +62,8 @@ Source: "src\lm32_get_config.cpp";                     DestDir: "{app}\src"
 Source: "src\lm32_get_config.h";                       DestDir: "{app}\src"
 Source: "src\lm32_gdb.cpp";                            DestDir: "{app}\src"
 Source: "src\lm32_gdb.h";                              DestDir: "{app}\src"
+Source: "src\lm32_tlb.cpp";                            DestDir: "{app}\src"
+Source: "src\lm32_tlb.h";                              DestDir: "{app}\src"
 Source: "src\lnxmico32.cpp";                           DestDir: "{app}\src"
 Source: "src\lnxmico32.h";                             DestDir: "{app}\src"
 Source: "src\lnxtimer.cpp";                            DestDir: "{app}\src"

@@ -21,7 +21,7 @@
 // You should have received a copy of the GNU General Public License
 // along with cpumico32. If not, see <http://www.gnu.org/licenses/>.
 //
-// $Id: lm32_cpu_mico32.h,v 3.1 2017/04/11 12:40:41 simon Exp $
+// $Id: lm32_cpu_mico32.h,v 3.2 2017/05/13 10:45:19 simon Exp $
 // $Source: /home/simon/CVS/src/cpu/mico32/src/lm32_cpu_mico32.h,v $
 //
 //=============================================================
@@ -110,7 +110,15 @@
 #define INT_ID_DIVZERO          (0x5)
 #define INT_ID_EXTINT           (0x6)
 #define INT_ID_SYSCALL          (0x7)
+#ifdef LM32_MMU
+#define INT_ID_ITLB_MISS        (0x8)
+#define INT_ID_DTLB_MISS        (0x9)
+#define INT_ID_DTLB_FAULT       (0xa)
+#define INT_ID_PRIV_ACCESS      (0xb)
+#define INT_ID_MAX_NUM          INT_ID_PRIV_ACCESS
+#else
 #define INT_ID_MAX_NUM          INT_ID_SYSCALL
+#endif
 #define INT_ID_NUM              (INT_ID_MAX_NUM+1)
 
 #define IE_IE_MASK              (0x00000001)

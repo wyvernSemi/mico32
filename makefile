@@ -21,7 +21,7 @@
 # You should have received a copy of the GNU General Public License
 # along with cpumico32. If not, see <http://www.gnu.org/licenses/>.
 #
-# $Id: makefile,v 3.2 2017/04/05 12:38:46 simon Exp $
+# $Id: makefile,v 3.3 2017/05/13 14:31:15 simon Exp $
 # $Source: /home/simon/CVS/src/cpu/mico32/makefile,v $
 # 
 ##########################################################
@@ -48,7 +48,7 @@ endif
 LIBTARGET=${LIBBASENAME}.a
 LIBSOTARGET=${LIBBASENAME}.so
 
-LIBOBJS=lm32_cpu.o lm32_cpu_inst.o lm32_cpu_elf.o lm32_cpu_disassembler.o lm32_cpu_c.o lm32_cache.o
+LIBOBJS=lm32_cpu.o lm32_cpu_inst.o lm32_cpu_elf.o lm32_cpu_disassembler.o lm32_cpu_c.o lm32_cache.o lm32_tlb.o
 OBJECTS=${TARGET}.o lm32_get_config.o lm32_gdb.o
 
 LCOVINFO=lm32.info
@@ -65,9 +65,9 @@ CC_C=gcc
 # GCC in CYGWIN gives tedious warnings that all code is relocatable, and 
 # so -fPIC not required. So shut it up. Also define _GNU_SOURCE for tty code.
 ifeq (${OSTYPE}, Cygwin)
-  COPTS=-g -D_GNU_SOURCE 
+  COPTS=-g -D_GNU_SOURCE -DLM32_MMU
 else
-  COPTS=-g -fPIC
+  COPTS=-g -fPIC -DLM32_MMU
 endif
 
 COVOPTS=
@@ -86,6 +86,7 @@ ${OBJDIR}/lm32_cpu.o              : ${SRCDIR}/lm32_cpu.h     ${SRCDIR}/lm32_cpu_
 ${OBJDIR}/lm32_cpu_elf.o          : ${SRCDIR}/lm32_cpu.h     ${SRCDIR}/lm32_cpu_hdr.h ${SRCDIR}/lm32_cpu_mico32.h ${SRCDIR}/lm32_cpu_elf.cpp ${SRCDIR}/lm32_cpu_elf.h
 ${OBJDIR}/lm32_cpu_inst.o         : ${SRCDIR}/lm32_cpu.h     ${SRCDIR}/lm32_cpu_hdr.h ${SRCDIR}/lm32_cpu_mico32.h ${SRCDIR}/lm32_cpu_inst.cpp
 ${OBJDIR}/lm32_cache.o            : ${SRCDIR}/lm32_cpu_hdr.h ${SRCDIR}/lm32_cache.cpp ${SRCDIR}/lm32_cache.h
+${OBJDIR}/lm32_tlb.o              : ${SRCDIR}/lm32_cpu_hdr.h ${SRCDIR}/lm32_tlb.cpp   ${SRCDIR}/lm32_tlb.h
 ${OBJDIR}/lm32_cpu_disassembler.o : ${SRCDIR}/lm32_cpu.h     ${SRCDIR}/lm32_cpu_hdr.h ${SRCDIR}/lm32_cpu_mico32.h ${SRCDIR}/lm32_cpu_disassembler.cpp
 ${OBJDIR}/lm32_cpu_c.o            : ${SRCDIR}/lm32_cpu.h     ${SRCDIR}/lm32_cpu_hdr.h ${SRCDIR}/lm32_cpu.h ${SRCDIR}/lm32_cpu_c.cpp ${SRCDIR}/lm32_cpu_c.h
 ${OBJDIR}/lm32_gdb.o              : ${SRCDIR}/lm32_cpu.h     ${SRCDIR}/lm32_cpu_hdr.h ${SRCDIR}/lm32_gdb.cpp ${SRCDIR}/lm32_gdb.h

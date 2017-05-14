@@ -21,7 +21,7 @@
 // You should have received a copy of the GNU General Public License
 // along with cpumico32. If not, see <http://www.gnu.org/licenses/>.
 //
-// $Id: lm32_cpu_hdr.h,v 3.6 2017/04/20 08:58:50 simon Exp $
+// $Id: lm32_cpu_hdr.h,v 3.7 2017/05/13 10:45:19 simon Exp $
 // $Source: /home/simon/CVS/src/cpu/mico32/src/lm32_cpu_hdr.h,v $
 //
 //=============================================================
@@ -175,6 +175,34 @@
 #define LM32_CSR_ID_WP1              (0x19)
 #define LM32_CSR_ID_WP2              (0x1a)
 #define LM32_CSR_ID_WP3              (0x1b)
+
+#ifdef LM32_MMU
+// TLB register IDs
+#define LM32_CSR_ID_PSW              (0x1d)
+#define LM32_CSR_ID_TLBVADDR         (0x1e)
+#define LM32_CSR_ID_TLBPADDR         (0x1f)
+#define LM32_CSR_ID_TLBBADVADDR      (0x1f)
+
+#define LM32_PSW_ITLBE_BIT           3
+#define LM32_PSW_EITLBE_BIT          4
+#define LM32_PSW_BITLBE_BIT          5
+#define LM32_PSW_DTLBE_BIT           6
+#define LM32_PSW_EDTLBE_BIT          7
+#define LM32_PSW_BDTLBE_BIT          8
+#define LM32_PSW_USR_BIT             9
+#define LM32_PSW_EUSR_BIT            10
+#define LM32_PSW_BUSR_BIT            11
+
+#define IE_ITLBE_MASK               (1 << LM32_PSW_ITLBE_BIT)
+#define IE_EITLBE_MASK              (1 << LM32_PSW_EITLBE_BIT)
+#define IE_BITLBE_MASK              (1 << LM32_PSW_BITLBE_BIT)
+#define IE_DTLBE_MASK               (1 << LM32_PSW_DTLBE_BIT)
+#define IE_EDTLBE_MASK              (1 << LM32_PSW_EDTLBE_BIT)
+#define IE_BDTLBE_MASK              (1 << LM32_PSW_BDTLBE_BIT)
+#define IE_USR_MASK                 (1 << LM32_PSW_USR_BIT)
+#define IE_EUSR_MASK                (1 << LM32_PSW_EUSR_BIT)
+#define IE_BUSR_MASK                (1 << LM32_PSW_BUSR_BIT)
+#endif
 
 // Watchpoint control values
 #define LM32_WP_DISABLED             (0x00)

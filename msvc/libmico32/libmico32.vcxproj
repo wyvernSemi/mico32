@@ -47,7 +47,7 @@
     <ClCompile>
       <WarningLevel>Level3</WarningLevel>
       <Optimization>Disabled</Optimization>
-      <PreprocessorDefinitions>WIN32;_DEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>LM32_MMU;WIN32;_DEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <PrecompiledHeader>NotUsing</PrecompiledHeader>
       <AdditionalOptions>/D_CRT_SECURE_NO_WARNINGS /DLIBMICO32_DLL_LINKAGE /DLIBMICO32_EXPORTS %(AdditionalOptions)</AdditionalOptions>
     </ClCompile>
@@ -60,7 +60,7 @@
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <ClCompile>
       <WarningLevel>Level3</WarningLevel>
-      <PreprocessorDefinitions>WIN32;NDEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>LM32_MMU;WIN32;NDEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <PrecompiledHeader>NotUsing</PrecompiledHeader>
       <AdditionalOptions>/D_CRT_SECURE_NO_WARNINGS /DLIBMICO32_DLL_LINKAGE /DLIBMICO32_EXPORTS %(AdditionalOptions)</AdditionalOptions>
     </ClCompile>
@@ -82,6 +82,7 @@
     <ClInclude Include="..\..\src\lm32_cpu_elf.h" />
     <ClInclude Include="..\..\src\lm32_cpu_hdr.h" />
     <ClInclude Include="..\..\src\lm32_cpu_mico32.h" />
+    <ClInclude Include="..\..\src\lm32_tlb.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\src\lm32_cache.cpp" />
@@ -90,6 +91,7 @@
     <ClCompile Include="..\..\src\lm32_cpu_disassembler.cpp" />
     <ClCompile Include="..\..\src\lm32_cpu_elf.cpp" />
     <ClCompile Include="..\..\src\lm32_cpu_inst.cpp" />
+    <ClCompile Include="..\..\src\lm32_tlb.cpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

@@ -29,6 +29,9 @@
     <ClInclude Include="..\..\src\lm32_cpu_mico32.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\src\lm32_tlb.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\src\lm32_cache.cpp">
@@ -47,6 +50,9 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="..\..\src\lm32_cpu_inst.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\lm32_tlb.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>

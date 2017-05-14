@@ -21,7 +21,7 @@
 # You should have received a copy of the GNU General Public License
 # along with lnxmico32. If not, see <http://www.gnu.org/licenses/>.
 #
-# $Id: makefile.lnx,v 3.5 2017/04/05 12:38:45 simon Exp $
+# $Id: makefile.lnx,v 3.6 2017/05/13 14:31:16 simon Exp $
 # $Source: /home/simon/CVS/src/cpu/mico32/makefile.lnx,v $
 # 
 ##########################################################
@@ -48,7 +48,7 @@ endif
 LIBTARGET=${LIBBASENAME}.a
 LIBSOTARGET=${LIBBASENAME}.so
 
-LIBOBJS=lm32_cpu.o lm32_cpu_inst.o lm32_cpu_disassembler.o lm32_cpu_c.o lm32_cache.o
+LIBOBJS=lm32_cpu.o lm32_cpu_inst.o lm32_cpu_disassembler.o lm32_cpu_c.o lm32_cache.o lm32_tlb.o
 OBJECTS=${TARGET}.o lm32_get_config.o lnxuart.o lnxtimer.o lm32_gdb.o
 
 LCOVINFO=lm32.info
@@ -66,8 +66,8 @@ CC_C=gcc
 # Architecture options for external setting (e.g -m32 or -m64)
 ARCHOPTS=
 
-# Local options specific to lnxmic32 project
-LOCALOPTS=-DLM32_FAST_COMPILE
+# Local options specific to lnxmico32 project
+LOCALOPTS=-DLM32_FAST_COMPILE -DLM32_MMU
 #LOCALOPTS=
 
 # GCC in CYGWIN gives tedious warnings that all code is relocatable, and 
@@ -90,18 +90,19 @@ COVOPTS=
 
 all : ${TARGET} 
 
-${OBJDIR}/${TARGET}.o             : ${SRCDIR}/lm32_cpu.h ${SRCDIR}/lm32_cpu_hdr.h ${SRCDIR}/lnxuart.h ${SRCDIR}/lnxtimer.h ${SRCDIR}/lm32_cache.h
+${OBJDIR}/${TARGET}.o             : ${SRCDIR}/lm32_cpu.h     ${SRCDIR}/lm32_cpu_hdr.h ${SRCDIR}/lnxuart.h ${SRCDIR}/lnxtimer.h ${SRCDIR}/lm32_cache.h
 
-${OBJDIR}/lm32_cpu.o              : ${SRCDIR}/lm32_cpu.h ${SRCDIR}/lm32_cpu_hdr.h ${SRCDIR}/lm32_cpu_mico32.h ${SRCDIR}/lm32_cache.h
-${OBJDIR}/lm32_cpu_inst.o         : ${SRCDIR}/lm32_cpu.h ${SRCDIR}/lm32_cpu_hdr.h ${SRCDIR}/lm32_cpu_mico32.h
+${OBJDIR}/lm32_cpu.o              : ${SRCDIR}/lm32_cpu.h     ${SRCDIR}/lm32_cpu_hdr.h ${SRCDIR}/lm32_cpu_mico32.h ${SRCDIR}/lm32_cache.h
+${OBJDIR}/lm32_cpu_inst.o         : ${SRCDIR}/lm32_cpu.h     ${SRCDIR}/lm32_cpu_hdr.h ${SRCDIR}/lm32_cpu_mico32.h
 ${OBJDIR}/lm32_cache.o            : ${SRCDIR}/lm32_cpu_hdr.h ${SRCDIR}/lm32_cache.h
-${OBJDIR}/lm32_cpu_disassembler.o : ${SRCDIR}/lm32_cpu.h ${SRCDIR}/lm32_cpu_hdr.h ${SRCDIR}/lm32_cpu_mico32.h
-${OBJDIR}/lm32_cpu_c.o            : ${SRCDIR}/lm32_cpu.h ${SRCDIR}/lm32_cpu_hdr.h ${SRCDIR}/lm32_cpu_c.h
-${OBJDIR}/lm32_gdb.o              : ${SRCDIR}/lm32_cpu.h ${SRCDIR}/lm32_cpu_hdr.h ${SRCDIR}/lm32_gdb.cpp ${SRCDIR}/lm32_gdb.h
+${OBJDIR}/lm32_tlb.o              : ${SRCDIR}/lm32_cpu_hdr.h ${SRCDIR}/lm32_tlb.h
+${OBJDIR}/lm32_cpu_disassembler.o : ${SRCDIR}/lm32_cpu.h     ${SRCDIR}/lm32_cpu_hdr.h ${SRCDIR}/lm32_cpu_mico32.h
+${OBJDIR}/lm32_cpu_c.o            : ${SRCDIR}/lm32_cpu.h     ${SRCDIR}/lm32_cpu_hdr.h ${SRCDIR}/lm32_cpu_c.h
+${OBJDIR}/lm32_gdb.o              : ${SRCDIR}/lm32_cpu.h     ${SRCDIR}/lm32_cpu_hdr.h ${SRCDIR}/lm32_gdb.cpp ${SRCDIR}/lm32_gdb.h
 
 ${OBJDIR}/lm32_get_config.o       : ${SRCDIR}/lm32_cpu_hdr.h
-${OBJDIR}/lnxuart.o               : ${SRCDIR}/lm32_cpu.h ${SRCDIR}/lm32_cpu_hdr.h ${SRCDIR}/lm32_cache.h ${SRCDIR}/lnxmico32.h
-${OBJDIR}/lnxtimer.o              : ${SRCDIR}/lm32_cpu.h ${SRCDIR}/lm32_cpu_hdr.h ${SRCDIR}/lm32_cache.h
+${OBJDIR}/lnxuart.o               : ${SRCDIR}/lm32_cpu.h     ${SRCDIR}/lm32_cpu_hdr.h ${SRCDIR}/lm32_cache.h ${SRCDIR}/lnxmico32.h
+${OBJDIR}/lnxtimer.o              : ${SRCDIR}/lm32_cpu.h     ${SRCDIR}/lm32_cpu_hdr.h ${SRCDIR}/lm32_cache.h
 
 ##########################################################
 # Compilation rules

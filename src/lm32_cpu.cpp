@@ -22,7 +22,7 @@
 // You should have received a copy of the GNU General Public License
 // along with cpumico32. If not, see <http://www.gnu.org/licenses/>.
 //
-// $Id: lm32_cpu.cpp,v 3.10 2017/04/11 12:45:00 simon Exp $
+// $Id: lm32_cpu.cpp,v 3.11 2017/05/13 10:45:19 simon Exp $
 // $Source: /home/simon/CVS/src/cpu/mico32/src/lm32_cpu.cpp,v $
 //
 //=============================================================
@@ -32,6 +32,7 @@
 // -------------------------------------------------------------------------
 
 #include <cstdio>
+#include <cstring>
 
 #include "lm32_cpu.h"
 #include "lm32_cpu_mico32.h"
@@ -382,6 +383,9 @@ uint32_t lm32_cpu::lm32_read_mem (const uint32_t byte_addr_raw, const int type)
 {
     // Local holder for read data
     uint32_t data;
+
+    // By default, the physical address is the same as the incoming raw byte address
+    uint32_t paddr = byte_addr_raw;
     
     int  mem_callback_delay    = LM32_EXT_MEM_NOT_PROCESSED;
 
@@ -401,8 +405,31 @@ uint32_t lm32_cpu::lm32_read_mem (const uint32_t byte_addr_raw, const int type)
     // Local cache state
     int  cache_hit             = LM32_CACHE_MISS;       // Flag if cache hit/miss (or miss if no cache access)
 
+#ifdef LM32_MMU
+
+    if (type == LM32_MEM_RD_INSTR && state.psw & IE_ITLBE_MASK)
+    {
+        
+        lm32_tlb_status_e status = tlb_lookup(paddr, byte_addr_raw, false, false);
+        if (status == MISS)
+        {
+            state.int_flags |= (1 << INT_ID_ITLB_MISS);
+            return 0;
+        }
+    }
+    else if (state.psw & IE_DTLBE_MASK)
+    {
+        lm32_tlb_status_e status = tlb_lookup(paddr, byte_addr_raw, true, false);
+        if (status == MISS)
+        {
+            state.int_flags |= (1 << INT_ID_DTLB_MISS);
+            return 0;
+        }
+    }
+#endif
+
 #ifndef LM32_FAST_COMPILE
-    uint32_t byte_addr = byte_addr_raw % num_mem_bytes;
+    uint32_t byte_addr = paddr % num_mem_bytes;
 
     // Allocate some space for the memory tag as well, initialised to 0
     if (mem_tag == NULL)
@@ -439,7 +466,7 @@ uint32_t lm32_cpu::lm32_read_mem (const uint32_t byte_addr_raw, const int type)
         // If ICACHE configured, call the cache model
         if (icache_p != NULL) 
         {
-            cache_hit = icache_p->lm32_cache_access(byte_addr_raw);
+            cache_hit = icache_p->lm32_cache_access(paddr);
             cache_access = true;
             cache_words_per_line = icache_p->get_line_width() >> 2;
         }
@@ -449,7 +476,7 @@ uint32_t lm32_cpu::lm32_read_mem (const uint32_t byte_addr_raw, const int type)
     {
         // If DCACHE configured, call the cache model
         if (dcache_p != NULL) {
-            cache_hit = dcache_p->lm32_cache_access(byte_addr_raw);
+            cache_hit = dcache_p->lm32_cache_access(paddr);
             cache_access = true;
             cache_words_per_line = dcache_p->get_line_width() >> 2;
         }
@@ -457,7 +484,7 @@ uint32_t lm32_cpu::lm32_read_mem (const uint32_t byte_addr_raw, const int type)
 
 #else
     // This fast calculation requires num_mem_bytes to be a power of 2
-    uint32_t byte_addr = byte_addr_raw & num_mem_bytes_mask;
+    uint32_t byte_addr = paddr & num_mem_bytes_mask;
 #endif
 
 
@@ -465,12 +492,12 @@ uint32_t lm32_cpu::lm32_read_mem (const uint32_t byte_addr_raw, const int type)
     // intercepted the access
     if (pMemCallback != NULL
 #ifdef LM32_FAST_COMPILE
-        && !(byte_addr_raw >= mem_offset && byte_addr_raw < (mem_offset + num_mem_bytes))
+        && !(paddr >= mem_offset && paddr < (mem_offset + num_mem_bytes))
 #endif
         )
     {
         // Execute callback function
-        mem_callback_delay = pMemCallback(byte_addr_raw, &data, type, cache_hit, state.cycle_count);
+        mem_callback_delay = pMemCallback(paddr, &data, type, cache_hit, state.cycle_count);
 
         // TODO: lnxmico32 hangs after boot if state.cycle_count incremented by any amount on callback read.
         // (Seems okay for writes.) Don't yet know why.
@@ -499,7 +526,7 @@ uint32_t lm32_cpu::lm32_read_mem (const uint32_t byte_addr_raw, const int type)
         state.cycle_count += (!cache_hit) ? mem_wait_states * (cache_access ? cache_words_per_line : 1) : 0;
 
         // Check input is a valid address
-        if (byte_addr_raw > (num_mem_bytes + mem_offset) || (byte_addr_raw < mem_offset)) 
+        if (paddr > (num_mem_bytes + mem_offset) || (paddr < mem_offset)) 
         {
             // Flag as a bus error only if this is not a debug access, as debugger may try
             // an inspect non-valid addresses.
@@ -563,10 +590,10 @@ uint32_t lm32_cpu::lm32_read_mem (const uint32_t byte_addr_raw, const int type)
     // Watch point processing
     if (state.cfg & (1 << LM32_CFG_H))
     {
-        if (((GET_DC_C0(state.dc) & WP_RD_MASK) && (state.wp0 == byte_addr_raw)) || 
-            ((GET_DC_C1(state.dc) & WP_RD_MASK) && (state.wp1 == byte_addr_raw)) ||
-            ((GET_DC_C2(state.dc) & WP_RD_MASK) && (state.wp2 == byte_addr_raw)) || 
-            ((GET_DC_C3(state.dc) & WP_RD_MASK) && (state.wp3 == byte_addr_raw))) 
+        if (((GET_DC_C0(state.dc) & WP_RD_MASK) && (state.wp0 == paddr)) || 
+            ((GET_DC_C1(state.dc) & WP_RD_MASK) && (state.wp1 == paddr)) ||
+            ((GET_DC_C2(state.dc) & WP_RD_MASK) && (state.wp2 == paddr)) || 
+            ((GET_DC_C3(state.dc) & WP_RD_MASK) && (state.wp3 == paddr))) 
         {
 
             state.int_flags |= (1 << INT_ID_WATCHPOINT); 
@@ -589,6 +616,9 @@ uint32_t lm32_cpu::lm32_read_mem (const uint32_t byte_addr_raw, const int type)
 void lm32_cpu::lm32_write_mem(const uint32_t byte_addr_raw, const uint32_t data, const int type, const bool disable_cycle_count)
 {
     int  mem_callback_delay = LM32_EXT_MEM_NOT_PROCESSED;
+    bool do_local_access = true;
+
+    uint32_t paddr = byte_addr_raw;
 
     // Make a copy of the input word to avoid possibility of callback over-writing
     // input and then flagging for a local update
@@ -607,8 +637,25 @@ void lm32_cpu::lm32_write_mem(const uint32_t byte_addr_raw, const uint32_t data,
          mem32 = (uint32_t*)mem;                                                        //LCOV_EXCL_LINE
     }
 
+#ifdef LM32_MMU
+    if (state.psw & IE_DTLBE_MASK)
+    {
+        lm32_tlb_status_e status = tlb_lookup(paddr, byte_addr_raw, true, true);
+        if (status == MISS)
+        {
+            state.int_flags |= (1 << INT_ID_DTLB_MISS);
+            return;
+        }
+        else if (status = FAULT)
+        {
+            state.int_flags |= (1 << INT_ID_DTLB_FAULT);
+            return;
+        }
+    }
+#endif
+
 #ifndef LM32_FAST_COMPILE
-    uint32_t byte_addr = byte_addr_raw % num_mem_bytes;
+    uint32_t byte_addr = paddr % num_mem_bytes;
 
     // Allocate some space for the memory tag as well, initialised to 0
     if (mem_tag == NULL)
@@ -619,43 +666,36 @@ void lm32_cpu::lm32_write_mem(const uint32_t byte_addr_raw, const uint32_t data,
             exit(LM32_INTERNAL_ERROR);                                                   //LCOV_EXCL_LINE
         }
     }
-
-    // By default, do a local access
-    bool do_local_access = true;
     
 #else
     // This fast calculation requires num_mem_bytes to be a power of 2
-    uint32_t byte_addr = byte_addr_raw & num_mem_bytes_mask;
+    uint32_t byte_addr = paddr & num_mem_bytes_mask;
 #endif
 
     // If there's a memory access callback function, and not accessing internal memory,
     // call it and flag if it intercepted the access
-    if (pMemCallback != NULL
-#ifdef LM32_FAST_COMPILE
-        && !(byte_addr_raw >= mem_offset && byte_addr_raw < (mem_offset + num_mem_bytes))
-#endif
-        )
+    if (pMemCallback != NULL)
     {
         // Execute callback function
-        mem_callback_delay = pMemCallback(byte_addr_raw, &word, type, LM32_CACHE_MISS, state.cycle_count);
+        mem_callback_delay = pMemCallback(paddr, &word, type, LM32_CACHE_MISS, state.cycle_count);
 
         // Advance time by the returned amount, if intercepted, and flag no local access
-        if (mem_callback_delay != LM32_EXT_MEM_NOT_PROCESSED && !disable_cycle_count) 
+        if (mem_callback_delay != LM32_EXT_MEM_NOT_PROCESSED) 
         {
+            do_local_access = false;
 
 #ifndef LM32_FAST_COMPILE
-            do_local_access = false;
-            state.cycle_count += (lm32_time_t)mem_callback_delay;
+            if (!disable_cycle_count)
+            {
+                state.cycle_count += (lm32_time_t)mem_callback_delay;
+            }
 #endif
         }
     }
     // If not a callback address, do local memory access
-#ifdef LM32_FAST_COMPILE
-    else
-    {
-#else
     if (do_local_access)
     {
+#ifndef LM32_FAST_COMPILE
         // Add wait states for internal memory accesses
         if (!disable_cycle_count)
         {
@@ -663,7 +703,7 @@ void lm32_cpu::lm32_write_mem(const uint32_t byte_addr_raw, const uint32_t data,
         }
 
         // Check input is a valid address
-        if ((byte_addr_raw  > (num_mem_bytes + mem_offset)) || (byte_addr_raw  < mem_offset))
+        if ((paddr  > (num_mem_bytes + mem_offset)) || (paddr  < mem_offset))
         {
             state.int_flags |= (1 << INT_ID_DBUSERROR);
             return;
@@ -724,10 +764,10 @@ void lm32_cpu::lm32_write_mem(const uint32_t byte_addr_raw, const uint32_t data,
     // Watch point processing
     if (state.cfg & (1 << LM32_CFG_H)) 
     {
-        if (((GET_DC_C0(state.dc) & WP_WR_MASK) && (state.wp0 == byte_addr_raw)) ||
-            ((GET_DC_C1(state.dc) & WP_WR_MASK) && (state.wp1 == byte_addr_raw)) ||
-            ((GET_DC_C2(state.dc) & WP_WR_MASK) && (state.wp2 == byte_addr_raw)) ||
-            ((GET_DC_C3(state.dc) & WP_WR_MASK) && (state.wp3 == byte_addr_raw)))
+        if (((GET_DC_C0(state.dc) & WP_WR_MASK) && (state.wp0 == paddr)) ||
+            ((GET_DC_C1(state.dc) & WP_WR_MASK) && (state.wp1 == paddr)) ||
+            ((GET_DC_C2(state.dc) & WP_WR_MASK) && (state.wp2 == paddr)) ||
+            ((GET_DC_C3(state.dc) & WP_WR_MASK) && (state.wp3 == paddr)))
         {
 
             state.int_flags |= (1 << INT_ID_WATCHPOINT); 
@@ -822,6 +862,15 @@ void lm32_cpu::internal_reset_cpu()
     state.wp2  = 0;
     state.wp3  = 0;
 
+#ifdef LM32_MMU
+    state.psw         = 0;
+    state.tlbvaddr    = 0;
+    state.tlbbadvaddr = 0;
+
+    memset(dtlb.valid, 0, sizeof(dtlb.valid));
+    memset(itlb.valid, 0, sizeof(itlb.valid));
+#endif
+
     // Reset the frame and stack pointers to top of configured internal
     // memory (will be 0 if no internal memory). This is not really done
     // at reset, but is useful to forgo a start up routine. Will get 
@@ -864,7 +913,12 @@ void lm32_cpu::interrupt (const int interrupt_id)
     case INT_ID_SYSCALL:
     case INT_ID_EXTINT:
         state.r[EA_REG_IDX] = state.pc;
-        state.ie = (state.ie & ~IE_EIE_MASK) | ((state.ie & IE_IE_MASK) ? IE_EIE_MASK : 0);
+        state.ie  = (state.ie & ~IE_EIE_MASK) | ((state.ie & IE_IE_MASK) ? IE_EIE_MASK : 0);
+#ifdef LM32_MMU
+        state.psw = (state.psw & ~(IE_EITLBE_MASK)) | ((state.psw & IE_ITLBE_MASK) ? IE_EITLBE_MASK : 0);
+        state.psw = (state.psw & ~(IE_EDTLBE_MASK)) | ((state.psw & IE_DTLBE_MASK) ? IE_EDTLBE_MASK : 0);
+        state.psw = (state.psw & ~(IE_EUSR_MASK))   | ((state.psw & IE_USR_MASK)   ? IE_EUSR_MASK   : 0);
+#endif
         state.pc = ((state.dc & DEBUG_REMAP_ALL) ? state.deba : state.eba) + (interrupt_id << 5);
         break;
 
@@ -872,6 +926,11 @@ void lm32_cpu::interrupt (const int interrupt_id)
     case INT_ID_WATCHPOINT:
         state.r[BA_REG_IDX] = state.pc;
         state.ie = (state.ie & ~IE_BIE_MASK) | ((state.ie & IE_IE_MASK) ? IE_BIE_MASK : 0);
+#ifdef LM32_MMU
+        state.psw = (state.psw & ~(IE_BITLBE_MASK)) | ((state.psw & IE_ITLBE_MASK) ? IE_BITLBE_MASK : 0);
+        state.psw = (state.psw & ~(IE_BDTLBE_MASK)) | ((state.psw & IE_DTLBE_MASK) ? IE_BDTLBE_MASK : 0);
+        state.psw = (state.psw & ~(IE_BUSR_MASK))   | ((state.psw & IE_USR_MASK)   ? IE_BUSR_MASK   : 0);
+#endif
         state.pc = state.deba + (interrupt_id << 5);
         break;
 
