@@ -227,21 +227,6 @@ _loop1:
         ori  r1, r0, 1
         bne  r2, r1, _finish
 
-        # Disable interrupts and check no exception raised
-        ori  r2, r0, 0
-        wcsr IE, r2
-        ori  r20, r0, 0
-        ori  r3, r0, 0
-        divu r2, r0, r0
-        bne  r3, r20, _finish
-
-        # Re-enable interrupts and check that the div 0 is serviced
-        ori  r3,  r0, DIV0_EXCEPTION
-        ori  r2,  r0, 1
-        ori  r20, r0, 0
-        wcsr IE, r2
-        bne  r3, r20, _finish
-
         # Check div instruction raises interrupt
         ori  r3, r0, DIV0_EXCEPTION
         #div      r4, r1, r0

@@ -21,7 +21,7 @@
 // You should have received a copy of the GNU General Public License
 // along with cpumico32. If not, see <http://www.gnu.org/licenses/>.
 //
-// $Id: lm32_cpu_mico32.h,v 3.2 2017/05/13 10:45:19 simon Exp $
+// $Id: lm32_cpu_mico32.h,v 3.3 2017/05/16 08:37:23 simon Exp $
 // $Source: /home/simon/CVS/src/cpu/mico32/src/lm32_cpu_mico32.h,v $
 //
 //=============================================================
@@ -151,7 +151,7 @@
 #define CSR_NAMES {"IE  ", "IM  ", "IP  ", "ICC ", "DCC ", "CC  ", "CFG ", "EBA ", \
                    "DC  ", "DEBA", "CFG2", "??? ", "??? ", "??? ", "JTX ", "JRX ", \
                    "BP0 ", "BP1 ", "BP2 ", "BP3 ", "??? ", "??? ", "??? ", "??? ", \
-                   "WP0 ", "WP1 ", "WP2 ", "WP3 ", "??? ", "??? ", "??? ", "??? "}
+                   "WP0 ", "WP1 ", "WP2 ", "WP3 ", "??? ", "PSW ", "TLBVADDR", "TLBPADDR"}
 
 #define BREAK_INSTR             (0xAC000002)
 #define SCALL_INSTR             (0xAC000007)

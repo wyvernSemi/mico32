@@ -70,5 +70,8 @@
     <ClInclude Include="..\..\src\lnxmico32.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\src\lm32_tlb.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>

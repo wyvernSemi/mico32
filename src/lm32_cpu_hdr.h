@@ -21,7 +21,7 @@
 // You should have received a copy of the GNU General Public License
 // along with cpumico32. If not, see <http://www.gnu.org/licenses/>.
 //
-// $Id: lm32_cpu_hdr.h,v 3.7 2017/05/13 10:45:19 simon Exp $
+// $Id: lm32_cpu_hdr.h,v 3.8 2017/05/17 13:06:07 simon Exp $
 // $Source: /home/simon/CVS/src/cpu/mico32/src/lm32_cpu_hdr.h,v $
 //
 //=============================================================
@@ -176,7 +176,6 @@
 #define LM32_CSR_ID_WP2              (0x1a)
 #define LM32_CSR_ID_WP3              (0x1b)
 
-#ifdef LM32_MMU
 // TLB register IDs
 #define LM32_CSR_ID_PSW              (0x1d)
 #define LM32_CSR_ID_TLBVADDR         (0x1e)
@@ -202,7 +201,6 @@
 #define IE_USR_MASK                 (1 << LM32_PSW_USR_BIT)
 #define IE_EUSR_MASK                (1 << LM32_PSW_EUSR_BIT)
 #define IE_BUSR_MASK                (1 << LM32_PSW_BUSR_BIT)
-#endif
 
 // Watchpoint control values
 #define LM32_WP_DISABLED             (0x00)

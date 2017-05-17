@@ -95,6 +95,7 @@
     <ClInclude Include="..\..\src\lm32_cpu_hdr.h" />
     <ClInclude Include="..\..\src\lm32_cpu_mico32.h" />
     <ClInclude Include="..\..\src\lm32_gdb.h" />
+    <ClInclude Include="..\..\src\lm32_tlb.h" />
     <ClInclude Include="..\..\src\lnxmico32.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

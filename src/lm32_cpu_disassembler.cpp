@@ -21,7 +21,7 @@
 // You should have received a copy of the GNU General Public License
 // along with cpumico32. If not, see <http://www.gnu.org/licenses/>.
 //
-// $Id: lm32_cpu_disassembler.cpp,v 3.2 2017/05/14 05:18:42 simon Exp $
+// $Id: lm32_cpu_disassembler.cpp,v 3.3 2017/05/17 13:05:17 simon Exp $
 // $Source: /home/simon/CVS/src/cpu/mico32/src/lm32_cpu_disassembler.cpp,v $
 //
 //=============================================================
@@ -233,11 +233,11 @@ void lm32_cpu::disassemble(const p_lm32_decode_t d, FILE *ofp, const bool disass
     case INSTR_FMT_CR:
         if (d->decode->instr_name[0] == 'r')
         {
-            fprintf(ofp, "%s %s          ",       fmt_register(d->reg2, str[0], false), csr_name_str[d->reg0_csr]);
+            fprintf(ofp, "%s %s      %s",       fmt_register(d->reg2, str[0], false), csr_name_str[d->reg0_csr], d->reg0_csr >= LM32_CSR_ID_TLBVADDR ? "" : "    ");
         }
         else
         {
-            fprintf(ofp, "%s, %s          ",       csr_name_str[d->reg0_csr], fmt_register(d->reg1, str[0], true));
+            fprintf(ofp, "%s, %s      %s",       csr_name_str[d->reg0_csr], fmt_register(d->reg1, str[0], true), d->reg0_csr >= LM32_CSR_ID_TLBVADDR ? "" : "    ");
         }
         break;
 

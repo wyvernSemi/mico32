@@ -38,6 +38,7 @@ dirlist="instructions/add \
          exceptions/dbus_errors \
          exceptions/hw_debug \
          api/num_instr \
+         mmu/tlb \
 "
 
 #

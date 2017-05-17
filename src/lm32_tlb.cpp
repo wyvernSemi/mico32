@@ -19,7 +19,7 @@
 // You should have received a copy of the GNU General Public License
 // along with this code. If not, see <http://www.gnu.org/licenses/>.
 //
-// $Id: lm32_tlb.cpp,v 3.1 2017/05/13 10:45:19 simon Exp $
+// $Id: lm32_tlb.cpp,v 3.3 2017/05/17 13:07:23 simon Exp $
 // $Source: /home/simon/CVS/src/cpu/mico32/src/lm32_tlb.cpp,v $
 //
 //=============================================================
@@ -49,8 +49,8 @@ lm32_tlb_status_e lm32_cpu::tlb_lookup(uint32_t &paddr, const uint32_t vaddr, co
     // By default, assume we'll miss
     lm32_tlb_status_e status = MISS;
 
-    uint32_t ptag   = vaddr & ~(LM32_TLB_PAGE_SIZE-1);
-    uint32_t tlbidx = (vaddr >> LM32_TLB_PAGE_BITS) & (LM32_TLB_NUM_ENTRIES-1);
+    uint32_t tlbidx = (vaddr >>  LM32_TLB_PAGE_BITS)                        & (LM32_TLB_NUM_ENTRIES-1);
+    uint32_t ptag   = (vaddr >> (LM32_TLB_PAGE_BITS+LM32_TLB_ENTRIES_BITS)) & (LM32_TLB_NUM_ENTRIES-1);
     lm32_tbl_t* tlb = is_data ? &dtlb : &itlb;
     uint32_t entry  = tlb->entry[tlbidx];
 
@@ -73,12 +73,13 @@ lm32_tlb_status_e lm32_cpu::tlb_lookup(uint32_t &paddr, const uint32_t vaddr, co
     }
 
     // Regardless, construct the physical address
-    paddr = LM32_TLB_GET_PPFN(entry) | (vaddr & (LM32_TLB_PAGE_SIZE-1));
+    paddr = (entry & LM32_TLB_PPFN_MASK) | (vaddr & (LM32_TLB_PAGE_SIZE-1));
 
     // If a TLB exception, update the TLBBADVADDR register with virtual address that caused it.
     if (status != HIT)
     {
         state.tlbbadvaddr = vaddr;
+	state.tlbvaddr    = (vaddr & ~(LM32_TLB_PAGE_SIZE-1)) | (is_data ? 1 : 0);
     }
 
     return status;
@@ -110,7 +111,7 @@ void lm32_cpu::tlb_vaddr_update(uint32_t vaddr)
     case DTLB_IVLD:
         dtlb.valid[tlbidx] = false;
         break;
-    case DLTB_FLSH:
+    case DTLB_FLSH:
         memset(dtlb.valid, 0, sizeof(dtlb.valid));
         break;
     case ITLB_FLSH:
@@ -137,7 +138,10 @@ void lm32_cpu::tlb_paddr_update(uint32_t paddr)
 
     // Update table entry
     tlb->valid[tlbidx] = true;
-    tlb->entry[tlbidx] = paddr;
+
+    // Entry is paddr ORed with vaddr[31:22] positioned at entry[11:2]
+    tlb->entry[tlbidx] = (paddr & (LM32_TLB_PPFN_MASK) | ((paddr >> 1) & 0x3)) | 
+        ((state.tlbvaddr & LM32_TLB_PTAG_MASK) >> (LM32_TLB_PAGE_BITS+LM32_TLB_ENTRIES_BITS-2));
 }
 
 #endif

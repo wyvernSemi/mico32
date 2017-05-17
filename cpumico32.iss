@@ -1,10 +1,10 @@
 
 [Setup]
 AppName                 = CPUMICO32
-AppVerName              = CPUMICO32_3_12
+AppVerName              = CPUMICO32_3_13
 DefaultDirName          = {pf}\mico32
 DisableProgramGroupPage = yes
-OutputBaseFilename      = setup_cpumico32_3_12
+OutputBaseFilename      = setup_cpumico32_3_13
 
 [Dirs]
 Name: "{app}\obj"
@@ -113,6 +113,7 @@ Source: "test\instructions\store\test.s";              DestDir: "{app}\test\inst
 Source: "test\instructions\sub\test.s";                DestDir: "{app}\test\instructions\sub"
 Source: "test\instructions\template\test.s";           DestDir: "{app}\test\instructions\template"
 Source: "test\instructions\xor\test.s";                DestDir: "{app}\test\instructions\xor"
+Source: "test\mmu\tlb\test.s";                         DestDir: "{app}\test\mmu\tlb"
 Source: "test\speed\test.s";                           DestDir: "{app}\test\speed"
 
 ; Driver code

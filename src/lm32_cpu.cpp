@@ -22,7 +22,7 @@
 // You should have received a copy of the GNU General Public License
 // along with cpumico32. If not, see <http://www.gnu.org/licenses/>.
 //
-// $Id: lm32_cpu.cpp,v 3.11 2017/05/13 10:45:19 simon Exp $
+// $Id: lm32_cpu.cpp,v 3.13 2017/05/17 13:06:53 simon Exp $
 // $Source: /home/simon/CVS/src/cpu/mico32/src/lm32_cpu.cpp,v $
 //
 //=============================================================
@@ -417,7 +417,7 @@ uint32_t lm32_cpu::lm32_read_mem (const uint32_t byte_addr_raw, const int type)
             return 0;
         }
     }
-    else if (state.psw & IE_DTLBE_MASK)
+    else if (type != LM32_MEM_RD_INSTR && state.psw & IE_DTLBE_MASK)
     {
         lm32_tlb_status_e status = tlb_lookup(paddr, byte_addr_raw, true, false);
         if (status == MISS)
@@ -646,7 +646,7 @@ void lm32_cpu::lm32_write_mem(const uint32_t byte_addr_raw, const uint32_t data,
             state.int_flags |= (1 << INT_ID_DTLB_MISS);
             return;
         }
-        else if (status = FAULT)
+        else if (status == FAULT)
         {
             state.int_flags |= (1 << INT_ID_DTLB_FAULT);
             return;
@@ -912,13 +912,21 @@ void lm32_cpu::interrupt (const int interrupt_id)
     case INT_ID_DIVZERO:
     case INT_ID_SYSCALL:
     case INT_ID_EXTINT:
-        state.r[EA_REG_IDX] = state.pc;
-        state.ie  = (state.ie & ~IE_EIE_MASK) | ((state.ie & IE_IE_MASK) ? IE_EIE_MASK : 0);
 #ifdef LM32_MMU
+    case INT_ID_ITLB_MISS:
+    case INT_ID_DTLB_MISS: 
+    case INT_ID_DTLB_FAULT: 
+        if (interrupt_id >= INT_ID_ITLB_MISS)
+        {
+	    state.pc -= 4;
+        }
+    case INT_ID_PRIV_ACCESS:
         state.psw = (state.psw & ~(IE_EITLBE_MASK)) | ((state.psw & IE_ITLBE_MASK) ? IE_EITLBE_MASK : 0);
         state.psw = (state.psw & ~(IE_EDTLBE_MASK)) | ((state.psw & IE_DTLBE_MASK) ? IE_EDTLBE_MASK : 0);
         state.psw = (state.psw & ~(IE_EUSR_MASK))   | ((state.psw & IE_USR_MASK)   ? IE_EUSR_MASK   : 0);
 #endif
+        state.r[EA_REG_IDX] = state.pc;
+        state.ie  = (state.ie & ~IE_EIE_MASK) | ((state.ie & IE_IE_MASK) ? IE_EIE_MASK : 0);
         state.pc = ((state.dc & DEBUG_REMAP_ALL) ? state.deba : state.eba) + (interrupt_id << 5);
         break;
 
@@ -942,6 +950,10 @@ void lm32_cpu::interrupt (const int interrupt_id)
 
     // Clear the master interrupt enable
     state.ie &= ~IE_IE_MASK;
+
+#ifdef LM32_MMU
+    state.psw &= ~(IE_ITLBE_MASK | IE_DTLBE_MASK | IE_USR_MASK);
+#endif
 
     // Clear the flag the caused the interrupt
     state.int_flags &= ~(1ULL << interrupt_id);
@@ -977,12 +989,12 @@ bool lm32_cpu::process_exceptions()
             }
 
             // If not masked, flag any external interrupt
-            state.int_flags = (state.int_flags & ~(1 << INT_ID_EXTINT)) | ((state.ip & state.im) ? (1 << INT_ID_EXTINT) : 0);
+            state.int_flags = (state.int_flags & ~(1 << INT_ID_EXTINT)) | (((state.ie & IE_IE_MASK) && (state.ip & state.im)) ? (1 << INT_ID_EXTINT) : 0);
         }
     }
 
     // If interrupts enabled, and anyone is interrupting, call the interrupt function
-    if ((state.ie & IE_IE_MASK) && state.int_flags)
+    if (state.int_flags)
     {
         // Find the highest priority interrupt
         for (int_id = 0; int_id < INT_ID_NUM; int_id++) 
@@ -1136,7 +1148,7 @@ int lm32_cpu::lm32_run_program (const char* filename, const lm32_time_t cycles, 
     }
 
 #ifndef LNXMICO32
-    // Load program if asked to do so, or running form reset, but only if a filename specified
+    // Load program if asked to do so, or running from reset, but only if a filename specified
     if ((exec_type == LM32_RUN_FROM_RESET || load_code) && filename != NULL)
     {
         read_elf(filename);
@@ -1206,9 +1218,9 @@ int lm32_cpu::lm32_run_program (const char* filename, const lm32_time_t cycles, 
             }
         }
 
-        // If reached the user specified breakpoint address (and break_point not set by
+        // If reached the user specified breakpoint (and break_point not set by
         // previous instruction execution) flag to terminate the loop
-        if ((state.pc == (break_addr & ~(0x3UL)) || external_break) && !break_point)
+        if ((state.pc == (break_addr & ~(0x3UL)) || (cycles != LM32_FOREVER && state.cycle_count >= cycles) || external_break) && !break_point)
         {
             break_point = LM32_USER_BREAK;                                              //LCOV_EXCL_LINE
             break;                                                                      //LCOV_EXCL_LINE

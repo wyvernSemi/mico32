@@ -23,7 +23,7 @@
 // You should have received a copy of the GNU General Public License
 // along with cpumico32. If not, see <http://www.gnu.org/licenses/>.
 //
-// $Id: cpumico32.cpp,v 3.7 2017/04/19 13:22:02 simon Exp $
+// $Id: cpumico32.cpp,v 3.8 2017/05/17 13:02:53 simon Exp $
 // $Source: /home/simon/CVS/src/cpu/mico32/src/cpumico32.cpp,v $
 //
 //=============================================================
@@ -202,6 +202,7 @@ int main (int argc, char** argv)
     
             rtn_status = cpu->lm32_run_program(p_cfg->filename, p_cfg->num_run_instructions, p_cfg->user_break_addr, exec_type, load_code);
             load_code = false;
+            exec_type = LM32_RUN_CONTINUE;
         }
         while (rtn_status != LM32_USER_BREAK && rtn_status != LM32_LOCK_BREAK && rtn_status != LM32_DISASSEMBLE_BREAK);
     }

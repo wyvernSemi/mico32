@@ -19,7 +19,7 @@
 // You should have received a copy of the GNU General Public License
 // along with this code. If not, see <http://www.gnu.org/licenses/>.
 //
-// $Id: lm32_tlb.h,v 3.2 2017/05/13 14:32:01 simon Exp $
+// $Id: lm32_tlb.h,v 3.4 2017/05/17 13:07:23 simon Exp $
 // $Source: /home/simon/CVS/src/cpu/mico32/src/lm32_tlb.h,v $
 //
 //=============================================================
@@ -51,6 +51,9 @@
 #define LM32_TLB_GET_NOCACHE(_e) ((_e) & (1 << LM32_TLB_NO_CACHE_BIT))
 #define LM32_TLB_GET_RO(_e)      ((_e) & (1 << LM32_TLB_RO_BIT))
 
+#define LM32_TLB_PTAG_MASK       (~((1 << (LM32_TLB_PAGE_BITS+LM32_TLB_ENTRIES_BITS))-1))
+#define LM32_TLB_PPFN_MASK       (~((1 << LM32_TLB_PAGE_BITS)-1))
+
 #define LM32_TLB_VADDR_CMD_MASK  0x7
 
 // -------------------------------------------------------------------------
@@ -64,14 +67,25 @@ typedef struct
 }  lm32_tbl_t;
 
 
+// Document and RTL disagree on VADDR command codes. By default follow RTL 
+// as tests match this. Define LM32_MMU_AS_PER_DOC to make act like doc.
+#ifdef LM32_MMU_AS_PER_DOC
 typedef enum {
     NOP       = 0,
     ITLB_IVLD = 2,
     DTLB_IVLD = 3,
-    DLTB_FLSH = 4,
+    DTLB_FLSH = 4,
     ITLB_FLSH = 5
-
 } lm32_tlb_vaddr_action_e;
+#else
+typedef enum {
+    NOP       = 0,
+    ITLB_FLSH = 2,
+    DTLB_FLSH = 3,
+    ITLB_IVLD = 4,
+    DTLB_IVLD = 5
+} lm32_tlb_vaddr_action_e;
+#endif
 
 typedef enum
 {
