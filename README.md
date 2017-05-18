@@ -2,7 +2,7 @@
 
 LatticeMico32 instruction set simulator project
 
-Includes a C/C++ model of the lm32 CPU, with the follwoing features:
+Includes a C/C++ model of the lm32 CPU, with the following features:
 
 * All supported core instructions
 * All h/w modelled for configurable instructions
