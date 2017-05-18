@@ -60,6 +60,10 @@
 #  __lm32CfgUpdated()                        --- Any of the CFG field Tk variables updated callback
 #  __lm32fastmodeUpdated()                   --- fastmode Tk variable update callback
 #
+# Double Click:
+#  __lm32CreateCfgPopup()                    --- CFG word entry double-clicked callback to create popup window
+#    __lm32CfgUpdateFields()                 --- Updates CFG field variables from CFG entry value
+#
 # Execution buttons:
 #  __lm32RunCmd()                            --- Run button callback to execute program
 #    lm32GuiBase._lm32CheckStringNum()       --- static. Utility to ensure entry's a valid, in range, number
@@ -497,21 +501,7 @@ class lm32gui (lm32GuiBase, wyTkinterUtils):
     
     # Set the indivdual flag value to the bit masked value of the default CFG 
     # for their position (This makes combining easier later)
-    self.mflag.set   (cfg & 0x00000001)
-    self.dflag.set   (cfg & 0x00000002)
-    self.sflag.set   (cfg & 0x00000004)
-    self.xflag.set   (cfg & 0x00000010)
-    self.ccflag.set  (cfg & 0x00000020)
-    self.dcflag.set  (cfg & 0x00000040)
-    self.icflag.set  (cfg & 0x00000080)
-    self.gflag.set   (cfg & 0x00000100)
-    self.hflag.set   (cfg & 0x00000200)
-    self.rflag.set   (cfg & 0x00000400)
-    self.jflag.set   (cfg & 0x00000800)
-    
-    self.cfgint.set ((cfg & 0x0003f000) >> 12)
-    self.cfgbp.set  ((cfg & 0x003c0000) >> 18)
-    self.cfgwp.set  ((cfg & 0x01c00000) >> 22)
+    self.__lm32CfgUpdateFields()
     
     # If any of the CFG flag variables change (i.e. written to), call a function  
     self.mflag.trace ('w', self.__lm32CfgUpdated)
@@ -686,6 +676,41 @@ class lm32gui (lm32GuiBase, wyTkinterUtils):
       self.comport.set(self._LM32DEFAULTcomport)
     else :
       self.comport.set(self._LM32DEFAULTtcpport)
+
+  # __lm32CfgUpdateFields()
+  #
+  # Utility to set CFG flags/entry for any update to CFG variable
+  #
+  def  __lm32CfgUpdateFields(self) :
+
+    # Initialise the return list to be a single element list
+    rtnlist = [0]
+
+    valstr = self.cfgword.get()
+    if valstr != '' :
+      if self._lm32CheckStringNum(valstr, 0, 0xffffffff, rtnlist) == False :
+        showerror('Error', 'Invalid CFG setting')
+        return
+
+    cfg = rtnlist[0]
+
+    # Set the indivdual flag value to the bit masked value of the default CFG
+    # for their position (This makes combining easier later)
+    self.mflag.set   (cfg & 0x00000001)
+    self.dflag.set   (cfg & 0x00000002)
+    self.sflag.set   (cfg & 0x00000004)
+    self.xflag.set   (cfg & 0x00000010)
+    self.ccflag.set  (cfg & 0x00000020)
+    self.dcflag.set  (cfg & 0x00000040)
+    self.icflag.set  (cfg & 0x00000080)
+    self.gflag.set   (cfg & 0x00000100)
+    self.hflag.set   (cfg & 0x00000200)
+    self.rflag.set   (cfg & 0x00000400)
+    self.jflag.set   (cfg & 0x00000800)
+
+    self.cfgint.set ((cfg & 0x0003f000) >> 12)
+    self.cfgbp.set  ((cfg & 0x003c0000) >> 18)
+    self.cfgwp.set  ((cfg & 0x01c00000) >> 22)
 
   # __lm32CfgUpdated()
   #
@@ -1152,7 +1177,7 @@ class lm32gui (lm32GuiBase, wyTkinterUtils):
     self.dbhdl[tabidx].config(state = DISABLED)
     
     # Disable the CFG register entry box (hdls index 0), and bind
-    hdls[0].config(state = DISABLED)
+    #hdls[0].config(state = DISABLED)
     hdls[0].bind('<Double-Button-1>', self.__lm32CreateCfgPopup)
     
     # Add Entry widget frame in a new row, spanning all three columns
@@ -1251,6 +1276,9 @@ class lm32gui (lm32GuiBase, wyTkinterUtils):
     # Add the notebook as the first row
     note.grid(row = curr_row, padx = 10, pady = 10)
     curr_row += 1
+
+    # Update the flags and entry variables for CFG
+    self.__lm32CfgUpdateFields()
     
     # Set check button configuration. Each tuple is (<label>, <Tk variable>, <onvalue>).
     # Two dimensional array is tupleList[rows][cols]
