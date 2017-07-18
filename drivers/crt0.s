@@ -21,7 +21,7 @@
 // You should have received a copy of the GNU General Public License
 // along with this code. If not, see <http://www.gnu.org/licenses/>.
 //
-// $Id: crt0.s,v 1.1 2017/04/21 15:12:55 simon Exp $
+// $Id: crt0.s,v 1.4 2017/07/04 11:57:31 simon Exp $
 // $Source: /home/simon/CVS/src/cpu/mico32/drivers/crt0.s,v $
 //
 //============================================================= */
@@ -30,10 +30,12 @@
 // DEFINITIONS
 // ===================================================== */
 
-        .set SIGINT,  2   /* interrupt */
-        .set SIGTRAP, 5   /* trace trap */
-        .set SIGFPE,  8   /* arithmetic exception */
-        .set SIGSEGV, 11  /* segmentation violation */
+        .set SIGINT,           2   /* interrupt */
+        .set SIGTRAP,          5   /* trace trap */
+        .set SIGFPE,           8   /* arithmetic exception */
+        .set SIGSEGV,          11  /* segmentation violation */
+        
+        .set CRT_RUN_IND_ADDR, 0xfffffffc
 
 /* =====================================================
 // Define this as the boot section, and set global
@@ -80,7 +82,7 @@ _breakpoint_handler:
         nop
         nop
         .size   _breakpoint_handler, .-_breakpoint_handler
-        
+
 /* -----------------------------------------------------
 // Handler for instruction bus error exception
 // -----------------------------------------------------*/
@@ -112,7 +114,7 @@ _watchpoint_handler:
         nop
         nop
         .size   _watchpoint_handler, .-_watchpoint_handler
-        
+
 /* -----------------------------------------------------
 // Handler for data bus error exception
 // -----------------------------------------------------*/
@@ -128,7 +130,7 @@ _data_bus_error_handler:
         nop
         nop
         .size   _data_bus_error_handler, .-_data_bus_error_handler
-        
+
 /* -----------------------------------------------------
 // Handler for divide-by-zero exception
 // -----------------------------------------------------*/
@@ -144,7 +146,7 @@ _divide_by_zero_handler:
         nop
         nop
         .size   _divide_by_zero_handler, .-_divide_by_zero_handler
-        
+
 /* -----------------------------------------------------
 // Handler for external interrupts
 // -----------------------------------------------------*/
@@ -160,7 +162,7 @@ _interrupt_handler:
         nop
         nop
         .size   _interrupt_handler, .-_interrupt_handler
-        
+
 /* -----------------------------------------------------
 // Handler for system call exception
 // -----------------------------------------------------*/
@@ -206,7 +208,7 @@ _save_all:
         sw (sp+44), r1
         ret
         .size   _save_all, .-_save_all
-        
+
 /* -----------------------------------------------------
 // Restore all registers and return from exception      
 /* -----------------------------------------------------*/
@@ -229,7 +231,7 @@ _restore_all_and_eret:
         addi sp, sp, 56
         eret
         .size   _restore_all_and_eret, .-_restore_all_and_eret
-        
+
 /* -----------------------------------------------------
 // Restore all registers and return from breakpoint     
 // -----------------------------------------------------*/
@@ -260,27 +262,54 @@ _restore_all_and_bret:
     .type   _crt0, @function    
 _crt0:
     xor     r0, r0, r0
+    
+#ifndef CRT_DISABLE_CPU_RUN_INDICATOR    
+    /* Flag to outside world that we're running */
+    mvhi    r2, hi(CRT_RUN_IND_ADDR)
+    ori     r2, r2, lo(CRT_RUN_IND_ADDR)
+    sw      (r2+0), r0
+#endif
+    
     /* Setup stack, global pointer */
-	mvhi    sp, hi(_fstack)
+    mvhi    sp, hi(_fstack)
     ori     sp, sp, lo(_fstack)
     mvhi    gp, hi(_gp)
     ori     gp, gp, lo(_gp)
 
+    /* Conditionally clear BSS. In simulation, this may take too long. */
+#ifdef CRT_INIT_BSS
     /* Init BSS  */
+    mvhi    r2, hi(_fbss)
+    ori     r2, r1, lo(_fbss)
+    mvhi    r3, hi(_ebss)
+    ori     r3, r3, lo(_ebss)
+.bssloop:
+    sw      (r2+0), r0
+    addi    r2, r2, 4
+    bne     r2, r3, .bssloop
+#endif
 
-	/* Enable interrupts */
-	ori     r1, r0, 7
-	wcsr    IM, r1
-	ori     r1, r0, 1
-	wcsr    IE, r1
+    /* Enable interrupts */
+    ori     r1, r0, 7
+    wcsr    IM, r1
+    ori     r1, r0, 1
+    wcsr    IE, r1
 
     /* Call main() */
     calli main
+    
+#ifndef CRT_DISABLE_CPU_RUN_INDICATOR 
+    /* Flag to outside world that we're exiting */
+    mvhi    r2, hi(CRT_RUN_IND_ADDR)
+    ori     r2, r2, lo(CRT_RUN_IND_ADDR)
+    ori     r3, r0, 1
+    sw      (r2+0), r3    
+#endif    
 
     /* Jump to exit */
     bi _exit
     .size   _crt0, .-_crt0
-    
+
 /* -----------------------------------------------------
 // Top level exception handler routine (signal in r1).
 // Does nothing right now.
@@ -290,7 +319,7 @@ _crt0:
 _raise:
     ret
     .size   _raise, .-_raise
-    
+  
 /* -----------------------------------------------------
 // System call exception handler. Does nothing right now.
 // -----------------------------------------------------*/      

@@ -29,7 +29,7 @@ main:
         xor      r0, r0, r0
 
         # By default, set the result to fail
-        ori      r30, r0, FAIL_VALUE
+        ori      r30, r0, 0
         ori      r31, r0, RESULT_ADDR
         sw       (r31+0), r30
 
@@ -77,8 +77,11 @@ _ok4:
 
 _good:
         ori      r30, r0, PASS_VALUE
+        be       r0, r0, _store_result
 
 _finish:
+        ori      r30, r0, FAIL_VALUE
+_store_result:
         ori      r31, r0, RESULT_ADDR
         sw       (r31+0), r30
 _end:

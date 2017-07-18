@@ -21,7 +21,7 @@
 // You should have received a copy of the GNU General Public License
 // along with cpumico32. If not, see <http://www.gnu.org/licenses/>.
 //
-// $Id: lm32_cpu_hdr.h,v 3.8 2017/05/17 13:06:07 simon Exp $
+// $Id: lm32_cpu_hdr.h,v 3.9 2017/07/18 09:14:24 simon Exp $
 // $Source: /home/simon/CVS/src/cpu/mico32/src/lm32_cpu_hdr.h,v $
 //
 //=============================================================
@@ -135,6 +135,7 @@
 #define LM32_ICACHE_ENABLE          (1 << LM32_CFG_IC)
 #define LM32_SWDEBUG_ENABLE         (1 << LM32_CFG_G)
 #define LM32_HWDEBUG_ENABLE         (1 << LM32_CFG_H)
+#define LM32_ROMDEBUG_ENABLE        (1 << LM32_CFG_R)
 #define LM32_JTAG_ENABLE            (1 << LM32_CFG_J)
 
 #define LM32_NUM_BP_0               0
@@ -150,21 +151,21 @@
 #define LM32_NUM_WP_4               (4 << LM32_CFG_WP)
 
 // Default capabilities
-#define LM32_DEFAULT_CONFIG         (LM32_MULT_ENABLE    | \
-                                     LM32_DIV_ENABLE     | \
-                                     LM32_SHIFT_ENABLE   | \
-                                     LM32_SEXT_ENABLE    | \
-                                     LM32_COUNT_ENABLE   | \
-                                     LM32_DCACHE_ENABLE  | \
-                                     LM32_ICACHE_ENABLE  | \
-                                     LM32_SWDEBUG_ENABLE | \
-                                     LM32_HWDEBUG_ENABLE | \
-                                     (32 << LM32_CFG_INT)| \
-                                     LM32_NUM_BP_4       | \
+#define LM32_DEFAULT_CONFIG         (LM32_MULT_ENABLE     | \
+                                     LM32_DIV_ENABLE      | \
+                                     LM32_SHIFT_ENABLE    | \
+                                     LM32_SEXT_ENABLE     | \
+                                     LM32_COUNT_ENABLE    | \
+                                     LM32_DCACHE_ENABLE   | \
+                                     LM32_ICACHE_ENABLE   | \
+                                     LM32_SWDEBUG_ENABLE  | \
+                                     LM32_ROMDEBUG_ENABLE | \
+                                     (32 << LM32_CFG_INT) | \
+                                     LM32_NUM_BP_4        | \
                                      LM32_NUM_WP_4)
                                      
 // Mask for writing to CFG register. Only bits set are configurable.
-#define LM32_CONFIG_WRITE_MASK       (0x03fffbf7)
+#define LM32_CONFIG_WRITE_MASK       (0x03fffdf7)
 
 // Hardware debug register IDs
 #define LM32_CSR_ID_BP0              (0x10)

@@ -1,10 +1,10 @@
 
 [Setup]
 AppName                 = CPUMICO32
-AppVerName              = CPUMICO32_3_13
+AppVerName              = CPUMICO32_3_14
 DefaultDirName          = {pf}\mico32
 DisableProgramGroupPage = yes
-OutputBaseFilename      = setup_cpumico32_3_13
+OutputBaseFilename      = setup_cpumico32_3_14
 
 [Dirs]
 Name: "{app}\obj"
@@ -17,6 +17,9 @@ Source: "cpumico32.iss";                               DestDir: "{app}"
 ; Linux/cygwin make files
 Source: "makefile";                                    DestDir: "{app}"
 Source: "makefile.lnx";                                DestDir: "{app}"
+
+; MSVC setup and build batch file
+Source: "runmsbuild.bat";                              DestDir: "{app}"
 
 ; Example .ini file
 Source: "lm32cpu.ini";                                 DestDir: "{app}"
@@ -84,8 +87,8 @@ Source: "test\vmlinux.bin";                            DestDir: "{app}\test"
 Source: "test\lnx.ini";                                DestDir: "{app}\test"
 Source: "test\test.ini";                               DestDir: "{app}\test"
 
-; Linux/cygwin bash shell script to run model test code
-Source: "test\runtest.sh";                             DestDir: "{app}\test"
+; Python script to run model test code
+Source: "test\runtest.py";                             DestDir: "{app}\test"
 
 ; Model test source code
 Source: "test\api\num_instr\test.s";                   DestDir: "{app}\test\api\num_instr"
@@ -122,6 +125,7 @@ Source: "drivers\lm32_uart_driver.c";                  DestDir: "{app}\drivers"
 Source: "drivers\small_printf.c";                      DestDir: "{app}\drivers"
 Source: "drivers\small_printf.h";                      DestDir: "{app}\drivers"
 Source: "drivers\lnxram.ld";                           DestDir: "{app}\drivers"
+Source: "drivers\cpuram.ld";                           DestDir: "{app}\drivers"
 Source: "drivers\liblm32drivers.a";                    DestDir: "{app}\drivers"
 
 ; Example code

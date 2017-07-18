@@ -19,8 +19,8 @@
 // You should have received a copy of the GNU General Public License
 // along with this code. If not, see <http://www.gnu.org/licenses/>.
 //
-// $Id: lnxram.ld,v 1.2 2017/06/29 14:10:24 simon Exp $
-// $Source: /home/simon/CVS/src/cpu/mico32/drivers/lnxram.ld,v $
+// $Id: cpuram.ld,v 1.1 2017/06/29 14:08:26 simon Exp $
+// $Source: /home/simon/CVS/src/cpu/mico32/drivers/cpuram.ld,v $
 //
 //============================================================= */
 
@@ -30,8 +30,8 @@ ENTRY(_start)
 
 MEMORY
 {
-    rom (rx)  : ORIGIN = 0x08000000, LENGTH = 0x02000000
-    ram (rxw) : ORIGIN = 0x0a000000, LENGTH = 0x02000000
+    rom (rx)  : ORIGIN = 0x00000000, LENGTH = 0x00008000
+    ram (rxw) : ORIGIN = 0x00008000, LENGTH = 0x00008000
 }
 
 SECTIONS
@@ -39,7 +39,7 @@ SECTIONS
   .boot   : { *(.boot)   } >rom
   .text   : { *(.text)   } >rom
   .rodata : { *(.rodata) } >rom
-  .data   : { *(.data) _gp = ALIGN(16) + 0x7ff0;  } >ram
+  .data   : { *(.data) _gp = ALIGN(16) + 0x4000;  } >ram
   .bss    : { _fbss = .; *(.bss) ; . = ALIGN(4); _ebss = .; } >ram
 }
 

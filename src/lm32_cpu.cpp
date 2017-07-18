@@ -22,7 +22,7 @@
 // You should have received a copy of the GNU General Public License
 // along with cpumico32. If not, see <http://www.gnu.org/licenses/>.
 //
-// $Id: lm32_cpu.cpp,v 3.13 2017/05/17 13:06:53 simon Exp $
+// $Id: lm32_cpu.cpp,v 3.14 2017/07/18 09:14:44 simon Exp $
 // $Source: /home/simon/CVS/src/cpu/mico32/src/lm32_cpu.cpp,v $
 //
 //=============================================================
@@ -588,7 +588,7 @@ uint32_t lm32_cpu::lm32_read_mem (const uint32_t byte_addr_raw, const int type)
 
 #ifndef LM32_FAST_COMPILE
     // Watch point processing
-    if (state.cfg & (1 << LM32_CFG_H))
+    if (state.cfg & (1 << LM32_CFG_R))
     {
         if (((GET_DC_C0(state.dc) & WP_RD_MASK) && (state.wp0 == paddr)) || 
             ((GET_DC_C1(state.dc) & WP_RD_MASK) && (state.wp1 == paddr)) ||
@@ -762,7 +762,7 @@ void lm32_cpu::lm32_write_mem(const uint32_t byte_addr_raw, const uint32_t data,
 
 #ifndef LM32_FAST_COMPILE
     // Watch point processing
-    if (state.cfg & (1 << LM32_CFG_H)) 
+    if (state.cfg & (1 << LM32_CFG_R)) 
     {
         if (((GET_DC_C0(state.dc) & WP_WR_MASK) && (state.wp0 == paddr)) ||
             ((GET_DC_C1(state.dc) & WP_WR_MASK) && (state.wp1 == paddr)) ||
@@ -1050,7 +1050,7 @@ bool lm32_cpu::execute_instruction (p_lm32_decode_t d)
 
     // Flag any h/w breakpoints for this PC, but continue to execute instruction
     // and catch exception on the next iteration
-    if (state.cfg & (1 << LM32_CFG_H))
+    if (state.cfg & (1 << LM32_CFG_R))
     {
         if ((state.bp0 & 1) && ((state.bp0 & MASK_INSTR_ADDR) == state.pc) ||
             (state.bp1 & 1) && ((state.bp1 & MASK_INSTR_ADDR) == state.pc) ||

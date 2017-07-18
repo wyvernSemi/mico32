@@ -9,7 +9,7 @@ _start:
 
         .equ RESET_INDICATOR,    0x1964
 
-		.equ BAD_EXCEPTION_ADDR, 0x1200
+        .equ BAD_EXCEPTION_ADDR, 0x1200
 
         .equ RST_EXCEPTION,   0
         .equ BRK_EXCEPTION,   1
@@ -34,8 +34,8 @@ _reset_handler:
         nop
 _breakpoint_handler:
         sw (sp+0), ra
-		# A bret will return to the break instruction, so move it forward here
-		addi ba, ba, 4
+        # A bret will return to the break instruction, so move it forward here
+        addi ba, ba, 4
         calli _save_all
         mvi r1, 5
         mvi r2, BRK_EXCEPTION
@@ -71,6 +71,7 @@ _data_bus_error_handler:
         nop
         nop
 _divide_by_zero_handler:
+        addi ea, ea, 4
         sw (sp+0), ra
         calli _save_all
         mvi r1, 8
@@ -78,7 +79,7 @@ _divide_by_zero_handler:
         calli _raise
         bi _restore_all_and_eret
         nop
-        nop
+#        nop
 _interrupt_handler:
         sw (sp+0), ra
         calli _save_all
@@ -90,8 +91,8 @@ _interrupt_handler:
         nop
 _system_call_handler:
         sw (sp+0), ra
-		# An eret will return to the scall instruction, so move it forward here
-		addi ea, ea, 4
+        # An eret will return to the scall instruction, so move it forward here
+        addi ea, ea, 4
         calli _save_all
         mv r1, sp
         mvi r2, SCALL_EXCEPTION
@@ -190,7 +191,7 @@ main:
 # ------------- reset tests --------------
 
         # By default, set the result to bad
-        ori  r24, r0, FAIL_VALUE
+        ori  r24, r0, 0
         ori  r25, r0, RESULT_ADDR
         sw  (r25+0), r24
 
@@ -207,7 +208,7 @@ main:
 
         # Set up a loop counter
         ori  r17, r0, 0
-
+        
 # Looping over tests using EBA and DEBA registers
 _loop1:
 
@@ -262,7 +263,6 @@ _loop1:
         ori  r1, r0, 1
         bne  r2, r1, _finish
 
-
 # ---------- system call tests -----------
 
         # Enable interrupts
@@ -276,9 +276,9 @@ _loop1:
 # ---------- break instr tests -----------
 
         # Skip break test on EBA loop, as always uses DEBA, and it is set to be bad
-		rcsr r2, DEBA
-		ori r3, r0, BAD_EXCEPTION_ADDR
-		be r2, r3, _skip_break
+        rcsr r2, DEBA
+        ori r3, r0, BAD_EXCEPTION_ADDR
+        be r2, r3, _skip_break
 
         # Enable interrupts
         ori  r2, r0, 1
@@ -306,11 +306,13 @@ _skip_break:
         ori  r1, r0, 2
         bne  r17, r1, _loop1
 
-
 _good:
         ori      r24, r0, PASS_VALUE
+        be       r0, r0, _store_result
 
 _finish:
+        ori      r24, r0, FAIL_VALUE
+_store_result:
         ori      r25, r0, RESULT_ADDR
         sw       (r25+0), r24
 _end:

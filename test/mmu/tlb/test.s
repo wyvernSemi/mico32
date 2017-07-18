@@ -1,105 +1,118 @@
 
 .macro test_name name
-	.data
+        .data
 tn_\name:
-	.asciz "\name"
-	.text
-	mvhi r13, hi(tn_\name)
-	ori r13, r13, lo(tn_\name)
-	sw (r12+8), r13
+        .asciz "\name"
+        .text
+        mvhi r13, hi(tn_\name)
+        ori r13, r13, lo(tn_\name)
+        sw (r12+8), r13
 _\name:
 .endm
 
 .macro load reg val
-	mvhi \reg, hi(\val)
-	ori \reg, \reg, lo(\val)
+        mvhi \reg, hi(\val)
+        ori \reg, \reg, lo(\val)
 .endm
 
 .macro tc_pass
-	mvi r13, 0
-	sw (r12+4), r13
+        mvi r13, 0
+        sw (r12+4), r13
 .endm
 
 .macro tc_fail
-	mvi r13, 0xbad
-	sw (r12+4), r13
-	sw (r12+0xc), r13
+        mvi r13, 0xbad
+        sw (r12+4), r13
+        sw (r12+0xc), r13
 .endm
 
 .macro check_r3 val
-	mvhi r13, hi(\val)
-	ori r13, r13, lo(\val)
-	be r3, r13, 991f
-	tc_fail
-	bi 992f
+        mvhi r13, hi(\val)
+        ori r13, r13, lo(\val)
+        be r3, r13, 991f
+        tc_fail
+        bi 992f
 991:
-	tc_pass
+        tc_pass
 992:
 .endm
 
 .macro check_reg reg val
-	mvhi r13, hi(\val)
-	ori r13, r13, lo(\val)
-	be \reg, r13, 991f
-	tc_fail
-	bi 992f
+        mvhi r13, hi(\val)
+        ori r13, r13, lo(\val)
+        be \reg, r13, 991f
+        tc_fail
+        bi 992f
 991:
-	tc_pass
+        tc_pass
 992:
 .endm
 
 .macro check_mem adr val
-	mvhi r13, hi(\adr)
-	ori r13, r13, lo(\adr)
-	mvhi r14, hi(\val)
-	ori r14, r14, lo(\val)
-	lw r13, (r13+0)
-	be r13, r14, 991f
-	tc_fail
-	bi 992f
+        mvhi r13, hi(\adr)
+        ori r13, r13, lo(\adr)
+        mvhi r14, hi(\val)
+        ori r14, r14, lo(\val)
+        lw r13, (r13+0)
+        be r13, r14, 991f
+        tc_fail
+        bi 992f
 991:
-	tc_pass
+        tc_pass
 992:
 .endm
 
 .macro check_excp excp
-	andi r13, r25, \excp
-	mv r25, r0
-	bne r13, r0, 991f
-	tc_fail
-	bi 992f
+        andi r13, r25, \excp
+        mv r25, r0
+        bne r13, r0, 991f
+        tc_fail
+        bi 992f
 991:
-	tc_pass
+        tc_pass
 992:
 .endm
 
 .macro check_csr csr val
-	mvhi r13, hi(\val)
-	ori r13, r13, lo(\val)
-	#rcsr r14, \csr
-	rcsr_\csr(REG14)
-	be r13, r14, 991f
-	tc_fail
-	bi 992f
+        mvhi r13, hi(\val)
+        ori r13, r13, lo(\val)
+        #rcsr r14, \csr
+        rcsr_\csr(REG14)
+        be r13, r14, 991f
+        tc_fail
+        bi 992f
 991:
-	tc_pass
+        tc_pass
 992:
 .endm
 
 .macro start
-	.global _main
-	.text
+        .global _main
+        .text
 _main:
-	ori r12, r0, lo(0xfff0)  # base address of test block
-	mvhi r15, hi(0x900d)
-	ori r15, r15, lo(0x900d)
-	sw (r12 + 0xc), r15
+        ori r12, r0, lo(0xfff0)  # base address of test block
+        mvhi r15, hi(0x0000)
+        ori r15, r15, lo(0x0000)
+        sw (r12 + 0xc), r15
+        orhi r15, r0, hi(0xfffffffc)
+        ori  r15, r15, lo(0xfffffffc)
+        sw (r15+0), r0
 .endm
 
 .macro end
-	sw (r12+0), r0
+        lw r13, (r12+0xc)
+        cmpei r13, r13, 0x0bad
+        bne  r13, r0, _done
+        ori r13, r0, 0x900d
+        sw (r12+0x0c), r13
+_done: 
+        sw (r12+0), r0
+        mvhi r2, hi(0xfffffffc)
+        ori  r2, r2, lo(0xfffffffc)
+        ori  r3, r0, 1
+        sw  (r2+0), r3        
 1:
-	bi 1b
+        bi 1b
 .endm
 
 .equ REG0,  0
@@ -166,124 +179,124 @@ _main:
 
 _start:
 _reset_handler:
-	xor r0, r0, r0
-	mvhi r1, hi(_start)
-	ori r1, r1, lo(_start)
-	wcsr eba, r1
-	wcsr deba, r1
-	bi _main
-	nop
-	nop
+        xor r0, r0, r0
+        mvhi r1, hi(_start)
+        ori r1, r1, lo(_start)
+        wcsr eba, r1
+        wcsr deba, r1
+        bi _main
+        nop
+        nop
 
 _breakpoint_handler:
-	ori r25, r25, 1
-	addi ra, ba, 4
-	ret
-	nop
-	nop
-	nop
-	nop
-	nop
+        ori r25, r25, 1
+        addi ra, ba, 4
+        ret
+        nop
+        nop
+        nop
+        nop
+        nop
 
 _instruction_bus_error_handler:
-	ori r25, r25, 2
-	addi ra, ea, 4
-	ret
-	nop
-	nop
-	nop
-	nop
-	nop
+        ori r25, r25, 2
+        addi ra, ea, 4
+        ret
+        nop
+        nop
+        nop
+        nop
+        nop
 
 _watchpoint_handler:
-	ori r25, r25, 4
-	addi ra, ba, 4
-	ret
-	nop
-	nop
-	nop
-	nop
-	nop
+        ori r25, r25, 4
+        addi ra, ba, 4
+        ret
+        nop
+        nop
+        nop
+        nop
+        nop
 
 _data_bus_error_handler:
-	ori r25, r25, 8
-	addi ra, ea, 4
-	ret
-	nop
-	nop
-	nop
-	nop
-	nop
+        ori r25, r25, 8
+        addi ra, ea, 4
+        ret
+        nop
+        nop
+        nop
+        nop
+        nop
 
 _divide_by_zero_handler:
-	ori r25, r25, 16
-	addi ra, ea, 4
-	ret
-	nop
-	nop
-	nop
-	nop
-	nop
+        ori r25, r25, 16
+        addi ra, ea, 4
+        ret
+        nop
+        nop
+        nop
+        nop
+        nop
 
 _interrupt_handler:
-	ori r25, r25, 32
-	addi ra, ea, 4
-	ret
-	nop
-	nop
-	nop
-	nop
-	nop
+        ori r25, r25, 32
+        addi ra, ea, 4
+        ret
+        nop
+        nop
+        nop
+        nop
+        nop
 
 _system_call_handler:
-	ori r25, r25, 64
-	addi ra, ea, 4
-	ret
-	nop
-	nop
-	nop
-	nop
-	nop
+        ori r25, r25, 64
+        addi ra, ea, 4
+        ret
+        nop
+        nop
+        nop
+        nop
+        nop
 
 _itlb_miss_handler:
-	ori r25, r25, 128
-	rcsr_TLBVADDR(REG24)
-	ret
-	nop
-	nop
-	nop
-	nop
-	nop
+        ori r25, r25, 128
+        rcsr_TLBVADDR(REG24)
+        ret
+        nop
+        nop
+        nop
+        nop
+        nop
 
 _dtlb_miss_handler:
-	ori r25, r25, 256
-	rcsr_TLBVADDR(REG24)
-	addi ra, ea, 4
-	ret
-	nop
-	nop
-	nop
-	nop
+        ori r25, r25, 256
+        rcsr_TLBVADDR(REG24)
+        addi ra, ea, 4
+        ret
+        nop
+        nop
+        nop
+        nop
 
 _dtlb_fault_handler:
-	ori r25, r25, 512
-	rcsr_TLBVADDR(REG24)
-	addi ra, ea, 4
-	ret
-	nop
-	nop
-	nop
-	nop
+        ori r25, r25, 512
+        rcsr_TLBVADDR(REG24)
+        addi ra, ea, 4
+        ret
+        nop
+        nop
+        nop
+        nop
 
 _privilege_exception_handler:
-	ori r25, r25, 1024
-	addi ra, ea, 4
-	ret
-	nop
-	nop
-	nop
-	nop
-	nop
+        ori r25, r25, 1024
+        addi ra, ea, 4
+        ret
+        nop
+        nop
+        nop
+        nop
+        nop
 
 
 initial_page:

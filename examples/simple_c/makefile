@@ -21,7 +21,7 @@
 # You should have received a copy of the GNU General Public License
 # along with lnxmico32. If not, see <http://www.gnu.org/licenses/>.
 #
-# $Id: makefile,v 1.1 2017/04/21 15:12:39 simon Exp $
+# $Id: makefile,v 1.2 2017/07/04 11:59:35 simon Exp $
 # $Source: /home/simon/CVS/src/cpu/mico32/examples/simple_c/makefile,v $
 # 
 ##########################################################
@@ -29,6 +29,22 @@
 ##########################################################
 # Definitions
 ##########################################################
+
+# Get the type of OS we're running in
+OSTYPE = $(shell uname)
+
+ifeq (${OSTYPE}, Linux)
+  #
+  # As lm32-elf-gcc calls 'as' (as opposed to lm32-elf-as), this clashes with
+  # the Linux GNU 'as' if the Lattice Mico GNU tools path isn't first, so
+  # locally set it to be the first in the search path. Modify LM32GCCBIN to 
+  # local system as required, either here or override on the command line
+  #
+  LM32GCCBIN   = /usr/local/latticemicosystem/3.8_x64/lm/micosystem/gtools/lm32/lm32-elf/bin
+
+  # Put the LM32 tool chain first in search path
+  export PATH := $(LM32GCCBIN):$(PATH)
+endif
 
 BASENAME = simple_c
 
@@ -41,13 +57,14 @@ SRC      = ${BASENAME}.c                                # Program source files
 TARGET   = ${BASENAME:%=%.elf}
 
 CC       = lm32-elf-gcc
-AS       = lm32-elf-as
 LD       = lm32-elf-ld
 
 #
 # Compile C with symbols for debugging
 #
 COPTS    = -g
+
+LIBOPTS  =
 
 #
 # Tell the assembler that there is a multiplier, divider, sign-extender and shifter
@@ -89,7 +106,7 @@ ${BUILDDIR}/%.o: %.c
 	${CC} ${COPTS} -Xassembler -a=${@:%.o=%.lst} ${ASOPTS} -I ${LIBDIR} -c $< -o $@
 
 ${LIBS}:    
-	${MAKE} -C ${LIBDIR}
+	${MAKE} -C ${LIBDIR} CPPOPTS=${LIBOPTS}
     
 .PHONY:  ${BUILDDIR} 
 ${BUILDDIR}:

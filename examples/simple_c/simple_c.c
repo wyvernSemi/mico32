@@ -19,7 +19,7 @@
 // You should have received a copy of the GNU General Public License
 // along with this code. If not, see <http://www.gnu.org/licenses/>.
 //
-// $Id: simple_c.c,v 1.1 2017/04/21 15:12:38 simon Exp $
+// $Id: simple_c.c,v 1.3 2017/06/29 18:41:34 simon Exp $
 // $Source%$
 //
 //=============================================================
@@ -28,10 +28,14 @@
 
 #define NEWLINE 0x0a
 
+//-------------------------------------------------------------
 // Function to get a decimal number from the input.
+//-------------------------------------------------------------
+
 static int get_count_ip()
 {
-    int loops, c;
+    int loops = 0;
+    int c;
 
     sml_printf("Enter loop count: ");
 
@@ -61,8 +65,10 @@ static int get_count_ip()
     return loops;
 }
 
-
+//-------------------------------------------------------------
 // Example program to (labouriously) add number from 1 to n
+//-------------------------------------------------------------
+
 main (int argc, char** argv)
 {
     static int count = 0;

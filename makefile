@@ -21,7 +21,7 @@
 # You should have received a copy of the GNU General Public License
 # along with cpumico32. If not, see <http://www.gnu.org/licenses/>.
 #
-# $Id: makefile,v 3.3 2017/05/13 14:31:15 simon Exp $
+# $Id: makefile,v 3.7 2017/07/18 09:33:48 simon Exp $
 # $Source: /home/simon/CVS/src/cpu/mico32/makefile,v $
 # 
 ##########################################################
@@ -32,53 +32,64 @@
 
 BASENAME=cpumico32
 LIBBASENAME=libmico32
+LNXTARGET=lnxmico32
 
 OSTYPE:=$(shell uname -o)
+OSTYPE_S:=$(shell uname -s)
 
 # If BUILDC is defined (as something---doesn't matter what), then we're
 # doing a build of the C top level program.
 ifneq ($(BUILDC),)
-  TARGET=${BASENAME}_c
-  COVEXCL=${TARGET}.c lm32_cpu_disassembler.cpp lm32_cpu_c.cpp lm32_get_config.cpp
+  TARGET   = ${BASENAME}_c
+  COVEXCL  = ${TARGET}.c lm32_cpu_disassembler.cpp lm32_cpu_c.cpp lm32_get_config.cpp
 else
-  TARGET=${BASENAME}
-  COVEXCL=${TARGET}.cpp lm32_cpu_disassembler.cpp lm32_cpu_c.cpp lm32_get_config.cpp
+  TARGET   = ${BASENAME}
+  COVEXCL  = ${TARGET}.cpp lm32_cpu_disassembler.cpp lm32_cpu_c.cpp lm32_get_config.cpp
 endif
 
-LIBTARGET=${LIBBASENAME}.a
-LIBSOTARGET=${LIBBASENAME}.so
+LIBTARGET  = ${LIBBASENAME}.a
+LIBSOTARGET= ${LIBBASENAME}.so
 
-LIBOBJS=lm32_cpu.o lm32_cpu_inst.o lm32_cpu_elf.o lm32_cpu_disassembler.o lm32_cpu_c.o lm32_cache.o lm32_tlb.o
-OBJECTS=${TARGET}.o lm32_get_config.o lm32_gdb.o
+LIBOBJS    = lm32_cpu.o lm32_cpu_inst.o lm32_cpu_elf.o lm32_cpu_disassembler.o lm32_cpu_c.o lm32_cache.o lm32_tlb.o
+OBJECTS    = ${TARGET}.o lm32_get_config.o lm32_gdb.o
 
-LCOVINFO=lm32.info
-COVLOGFILE=cov.log
-COVDIR=cov_html
+LCOVINFO   = lm32.info
+COVLOGFILE = cov.log
+COVDIR     = cov_html
 
-SRCDIR=./src
-OBJDIR=./obj
-TESTDIR=./test
+SRCDIR     = ./src
+OBJDIR     = ./obj
+TESTDIR    = ./test
+SIMDIR     = ./HDL/test
+SYNTHDIR   = ./HDL/synth/altera
 
-CC=g++
-CC_C=gcc
+CC         = g++
+CC_C       = gcc
 
 # GCC in CYGWIN gives tedious warnings that all code is relocatable, and 
 # so -fPIC not required. So shut it up. Also define _GNU_SOURCE for tty code.
 ifeq (${OSTYPE}, Cygwin)
-  COPTS=-g -D_GNU_SOURCE -DLM32_MMU
+  COPTS    = -g -D_GNU_SOURCE -DLM32_MMU
 else
-  COPTS=-g -fPIC -DLM32_MMU
+  COPTS    = -g -fPIC -DLM32_MMU
+endif
+
+ifeq (${OSTYPE_S},windows32)
+  TGTDIR   = ../../../msvc/Release
+else
+  TGTDIR   = ../../../
 endif
 
 COVOPTS=
 #COVOPTS=-coverage
 
+.SILENT:
 
 ##########################################################
 # Dependency definitions
 ##########################################################
 
-all : ${TARGET} 
+all : ${TARGET} ${LNXTARGET}
 
 ${OBJDIR}/${TARGET}.o             : ${SRCDIR}/lm32_cpu.h ${SRCDIR}/lm32_cpu_hdr.h
 
@@ -95,6 +106,11 @@ ${OBJDIR}/lm32_gdb.o              : ${SRCDIR}/lm32_cpu.h     ${SRCDIR}/lm32_cpu_
 # Compilation rules
 ##########################################################
 
+ifeq ($(OSTYPE_S),windows32)
+${TARGET}:
+	runmsbuild.bat ${BASENAME}
+else
+
 ${TARGET} : ${OBJECTS:%=${OBJDIR}/%} ${LIBTARGET} ${LIBSOTARGET}
 	@$(CC) ${OBJECTS:%=${OBJDIR}/%} ${LIBTARGET} ${ARCHOPT} ${COVOPTS} ${LDOPTS} -o ${TARGET}
 
@@ -110,7 +126,11 @@ ${OBJDIR}/%.o : ${SRCDIR}/%.cpp
 	@$(CC) ${ARCHOPT} $(COPTS) ${COVOPTS} -c $< -o $@ 
 
 ${OBJDIR}/%.o : ${SRCDIR}/%.c
-	@$(CC_C) ${ARCHOPT} $(COPTS) ${COVOPTS} -c $< -o $@ 
+	@$(CC_C) ${ARCHOPT} $(COPTS) ${COVOPTS} -c $< -o $@
+endif
+
+${LNXTARGET}:
+	@make -f makefile.lnx
 
 ##########################################################
 # Microsoft Visual C++ 2010
@@ -129,13 +149,22 @@ MSVC:   mscv_dummy
 # Test
 ##########################################################
 
-# Dummy to force test always to run
-dummy:
+.PHONY: test sim hwtest
 
-runtest: test
+# Rule for running tests on the model
+test: ${TARGET} 
+	@cd ${TESTDIR}; ./runtest.py -e ${TGTDIR}/${TARGET}
 
-test: ${TARGET} dummy
-	@cd ${TESTDIR}; ./runtest.sh ../../../${TARGET}
+# Rule for running tests on the simulation
+sim: 
+	@make -C ${SIMDIR} regression
+
+# Rule for running tests on the hardware
+hwtest:
+	@make -C ${SYNTHDIR} regression
+
+# Rule to run all tests
+alltest: test sim hwtest
 
 ##########################################################
 # coverage
@@ -151,18 +180,20 @@ coverage:
 ##########################################################
 
 clean:
+	@make -f makefile.lnx clean
+	@if [ -d ${SIMDIR} ]; then make -C ${SIMDIR} clean; fi
 	@/bin/rm -rf ${TARGET} ${LIBTARGET} ${LIBSOTARGET} \
-	             ${OBJDIR}/*.o ${OBJDIR}/*.gc* ${TESTDIR}/instructions/*/test.o \
-	             ${TESTDIR}/instructions/*/test.elf ${COVDIR} *.info
+                 ${OBJDIR}/*.o ${OBJDIR}/*.gc* ${TESTDIR}/instructions/*/test.o \
+                 ${TESTDIR}/instructions/*/test.elf ${COVDIR} *.info
 
 cleanmsvc:
 	@/bin/rm -rf *.pdb ${MSVCDIR}/*.sdf ${MSVCDIR}/*.suo ${LIBBASENAME}.dll \
-	             ${MSVCDIR}/Debug ${MSVCDIR}/Release ${MSVCDIR}/ipch \
-	             ${MSVCDIR}/${BASENAME}/Debug \
-		     ${MSVCDIR}/${BASENAME}/release \
-	             ${MSVCDIR}/${LIBBASENAME}/*.vcxproj.user \
-	             ${MSVCDIR}/${LIBBASENAME}/Debug \
-		     ${MSVCDIR}/${LIBBASENAME}/release 
+                       ${MSVCDIR}/Debug ${MSVCDIR}/Release ${MSVCDIR}/ipch \
+                       ${MSVCDIR}/${BASENAME}/Debug \
+                       ${MSVCDIR}/${BASENAME}/release \
+                       ${MSVCDIR}/${LIBBASENAME}/*.vcxproj.user \
+                       ${MSVCDIR}/${LIBBASENAME}/Debug \
+                       ${MSVCDIR}/${LIBBASENAME}/release 
 
 sparkle: clean cleanmsvc
 	@/bin/rm -f *.exe *.log

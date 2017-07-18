@@ -297,7 +297,7 @@ class lm32GuiBase :
   _LM32DEFAULTnuminstr           = 'forever'
   _LM32DEFAULTdumpaddr           = 'NONE'
   _LM32DEFAULTdumpbytes          = '4'
-  _LM32DEFAULTcfgword            = '0x011203f7'
+  _LM32DEFAULTcfgword            = '0x011205f7'
   _LM32DEFAULTwaitstates         = '0'
   _LM32DEFAULTbpaddr             = 'NONE'
   _LM32DEFAULTinifile            = 'NONE'
