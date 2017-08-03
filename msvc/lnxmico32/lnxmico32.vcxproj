@@ -47,7 +47,7 @@
       </PrecompiledHeader>
       <WarningLevel>Level3</WarningLevel>
       <Optimization>Disabled</Optimization>
-      <PreprocessorDefinitions> LM32_MMU;LM32GDB_DEBUG;LNXMICO32;_CRT_SECURE_NO_WARNINGS ;WIN32;_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions> LM32_MMU;_LM32GDB_DEBUG;LNXMICO32;_CRT_SECURE_NO_WARNINGS ;WIN32;_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -82,6 +82,7 @@
     <ClCompile Include="..\..\src\lm32_cache.cpp" />
     <ClCompile Include="..\..\src\lm32_cpu.cpp" />
     <ClCompile Include="..\..\src\lm32_cpu_disassembler.cpp" />
+    <ClCompile Include="..\..\src\lm32_cpu_elf.cpp" />
     <ClCompile Include="..\..\src\lm32_cpu_inst.cpp" />
     <ClCompile Include="..\..\src\lm32_gdb.cpp" />
     <ClCompile Include="..\..\src\lm32_get_config.cpp" />

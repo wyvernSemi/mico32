@@ -19,7 +19,7 @@
 // You should have received a copy of the GNU General Public License
 // along with cpumico32. If not, see <http://www.gnu.org/licenses/>.
 //
-// $Id: lm32_gdb.cpp,v 3.9 2017/05/02 10:59:41 simon Exp $
+// $Id: lm32_gdb.cpp,v 3.10 2017/07/31 14:02:45 simon Exp $
 // $Source: /home/simon/CVS/src/cpu/mico32/src/lm32_gdb.cpp,v $
 //
 //=============================================================
@@ -1118,6 +1118,7 @@ static bool lm32gdb_proc_gdb_cmd (lm32_cpu* cpu, const char* cmd, const int cmdl
 
     case 'k':
         rcvd_kill = true;
+        detached  = true;
         break;    
     }
 
@@ -1461,7 +1462,7 @@ int lm32gdb_process_gdb (lm32_cpu* cpu, int port_num, bool tcp_connection)
 
     if (detached)
     {
-        fprintf(stderr, "LM32GDB: host detached from target: terminating.\n");
+        fprintf(stderr, "LM32GDB: host detached or received 'kill' from target: terminating.\n");
     }
     else
     {

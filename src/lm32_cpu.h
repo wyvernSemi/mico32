@@ -22,7 +22,7 @@
 // You should have received a copy of the GNU General Public License
 // along with cpumico32. If not, see <http://www.gnu.org/licenses/>.
 //
-// $Id: lm32_cpu.h,v 3.5 2017/05/13 10:45:19 simon Exp $
+// $Id: lm32_cpu.h,v 3.6 2017/07/31 14:02:46 simon Exp $
 // $Source: /home/simon/CVS/src/cpu/mico32/src/lm32_cpu.h,v $
 //
 //=============================================================
@@ -258,13 +258,17 @@ public:
         }
     }
 
-// Private member functions
-private:
-
 #ifndef LNXMICO32
+private:
+#else
+public:
+#endif
+
     // Read ELF format program and load to memory
     void        read_elf                       (const char* const filename = LM32_DEFAULT_FNAME);
-#endif
+
+// Private member functions
+private:
     // Instruction execution
     bool        execute_instruction            (p_lm32_decode_t d);
     

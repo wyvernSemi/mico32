@@ -21,7 +21,7 @@
 # You should have received a copy of the GNU General Public License
 # along with lnxmico32. If not, see <http://www.gnu.org/licenses/>.
 #
-# $Id: makefile,v 1.2 2017/07/04 11:59:35 simon Exp $
+# $Id: makefile,v 1.3 2017/07/31 14:26:29 simon Exp $
 # $Source: /home/simon/CVS/src/cpu/mico32/examples/simple_c/makefile,v $
 # 
 ##########################################################
@@ -64,7 +64,8 @@ LD       = lm32-elf-ld
 #
 COPTS    = -g
 
-LIBOPTS  =
+# If compiling for hardware, comment out line below, or redefine LIBOPTS on command line
+LIBOPTS = "-DCRT_DISABLE_CPU_RUN_INDICATOR=1"
 
 #
 # Tell the assembler that there is a multiplier, divider, sign-extender and shifter
@@ -113,5 +114,5 @@ ${BUILDDIR}:
 	@mkdir -p ${BUILDDIR}
 
 clean:
-	rm -rf ${BUILDIR} *.elf 
+	rm -rf ${BUILDDIR} *.elf 
 	${MAKE} -C ${LIBDIR} clean

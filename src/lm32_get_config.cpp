@@ -22,7 +22,7 @@
 // You should have received a copy of the GNU General Public License
 // along with cpumico32. If not, see <http://www.gnu.org/licenses/>.
 //
-// $Id: lm32_get_config.cpp,v 3.10 2017/04/20 09:01:29 simon Exp $
+// $Id: lm32_get_config.cpp,v 3.12 2017/07/31 14:27:12 simon Exp $
 // $Source: /home/simon/CVS/src/cpu/mico32/src/lm32_get_config.cpp,v $
 //
 //=============================================================
@@ -52,8 +52,8 @@ extern int optind;
 // -------------------------------------------------------------------------
 
 // Define the getopt sub-strings for the different groups of arguments
-#define LM32_COMMON_ARGS               "hl:r:R:DIc:i:"
-#define LM32_CPUMICO32_ARGS            "f:m:o:e:T"
+#define LM32_COMMON_ARGS               "f:hl:r:R:DIc:i:"
+#define LM32_CPUMICO32_ARGS            "m:o:e:T"
 #define LM32_LNXMICO32_ARGS            "s:SL"
 #define LM32_NON_FAST_ARGS             "n:vxb:dw:"
 #define LM32_LNX_NON_FAST_ARGS         "V:"
@@ -279,9 +279,9 @@ extern "C" lm32_config_t* lm32_get_config(int argc, char** argv, const char* def
 #ifndef LNXMICO32
                     "\n        "
 #endif
-                    " [-R <num>] "
+                    " [-R <num>] [-f <filename>] "
 #ifndef LNXMICO32
-                    " [-f <filename>] [-m <num>] [-o < addr>] [-e <addr>]"
+                    " [-m <num>] [-o < addr>] [-e <addr>]"
 #endif
                     "\n"
                     "         [-l <filename>] [-c <num>] "
@@ -302,17 +302,15 @@ extern "C" lm32_config_t* lm32_get_config(int argc, char** argv, const char* def
 #ifndef LM32_FAST_COMPILE
                     "    -g Start up in GDB remote debug mode (default: off)\n"
                     "    -t Specify TCP socket connection for GDB remote debug (default: COM/pty connection)\n"
-                    "    -G Specify TCP "
+                    "    -G Specify TCP"
 #if (defined _WIN32) || (defined _WIN64)
-                    "COM "
+                    "/COM"
 #endif                    
-                    "port to use for GDB remote debug (default: %d)\n"
+                    " port to use for GDB remote debug (default: %d)\n"
                     "    -n Specify number of instructions to run (default: run forever)\n"
                     "    -b Specify address for breakpoint (default: none)\n"
 #endif
-#ifndef LNXMICO32
                     "    -f Specify executable ELF file (default: %s)\n"
-#endif
                     "    -l Specify log file output (default: stdout)\n"
 #ifndef LNXMICO32
                     "    -m Specify size of internal memory in bytes (default: %d)\n"
@@ -351,9 +349,10 @@ extern "C" lm32_config_t* lm32_get_config(int argc, char** argv, const char* def
 #else                    
                     , LM32_DEFAULT_COM_PORT
 #endif                    
-#endif                    
+#endif 
+                    , LM32_DEFAULT_FNAME ? LM32_DEFAULT_FNAME : "none --- GDB debug mode only"
 #ifndef LNXMICO32
-                    , LM32_DEFAULT_FNAME, LM32_DEFAULT_MEM_SIZE
+                    , LM32_DEFAULT_MEM_SIZE
 #endif
                         );
             exit(LM32_NO_ERROR);
@@ -590,11 +589,11 @@ extern "C" lm32_config_t* lm32_get_config(int argc, char** argv, const char* def
         case 'i':
             break;
 
-#ifndef LNXMICO32
+
         case 'f':
             lm32_cpu_cfg.filename = optarg;
             break;
-#endif
+
         case 'I':
             lm32_cpu_cfg.dump_num_exec_instr = 1;
             break;

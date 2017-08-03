@@ -21,7 +21,7 @@
 // You should have received a copy of the GNU General Public License
 // along with lnxmico32. If not, see <http://www.gnu.org/licenses/>.
 //
-// $Id: lnxmico32.cpp,v 3.7 2017/05/05 14:27:58 simon Exp $
+// $Id: lnxmico32.cpp,v 3.8 2017/07/31 14:02:45 simon Exp $
 // $Source: /home/simon/CVS/src/cpu/mico32/src/lnxmico32.cpp,v $
 //
 //=============================================================
@@ -672,6 +672,12 @@ int main (int argc, char** argv)
     // Run a debug session
     else
     {
+        // If a filename was specified on the command line, load the file to memory
+        if (p_cfg->filename != NULL)
+        {
+            cpu->read_elf(p_cfg->filename);
+        }
+
         // Start procssing commands from GDB
         if (lm32gdb_process_gdb(cpu, p_cfg->com_port_num, p_cfg->use_tcp_skt))
         {

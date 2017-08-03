@@ -21,7 +21,7 @@
 // You should have received a copy of the GNU General Public License
 // along with cpumico32. If not, see <http://www.gnu.org/licenses/>.
 //
-// $Id: lm32_cpu_hdr.h,v 3.9 2017/07/18 09:14:24 simon Exp $
+// $Id: lm32_cpu_hdr.h,v 3.10 2017/07/31 14:02:46 simon Exp $
 // $Source: /home/simon/CVS/src/cpu/mico32/src/lm32_cpu_hdr.h,v $
 //
 //=============================================================
@@ -63,7 +63,12 @@
 #define LM32_DIV_ZERO_BREAK          11
 
 // Default values for configuration
+#ifndef LNXMICO32
 #define LM32_DEFAULT_FNAME           "test.elf"
+#else
+#define LM32_DEFAULT_FNAME           NULL
+#endif
+
 #define LM32_NO_BREAK_ADDR           -1
 #define LM32_DEFAULT_BREAKADDR       LM32_NO_BREAK_ADDR
 
