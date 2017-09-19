@@ -39,6 +39,8 @@
 #        wyTkinterUtils.addCheckButtonRows() --- static. Utility to add checkbuttons based on list of tuples
 #        wyTkinterUtils.addEntryRows()       --- static. Utility to add Entry widgets based on list of tuples
 #        wyTkinterUtils.addFileEntryRows()   --- static. Utility to add File entry widgets based on list of tuples
+#      __lm32CreateToolbarWidgets()          --- Create a toolbar
+#        __lm32CreateToolbarButton()         --- Create an indvidual toolbar item
 #
 # lm32gui callback methods (and hierarchy):
 #
@@ -109,6 +111,95 @@ class lm32Stdout(object) :
   # but it doesn't need to do anything
   def flush(self):
     pass
+
+# ----------------------------------------------------------------
+# Define generic tooltip creator class
+# ----------------------------------------------------------------
+
+class wyCreateToolTip(object):
+
+  # 'Constants'
+  __waittime   = 500     # In milliseconds
+  __wraplength = 120     # In pixels
+  __offsetx    = 35
+  __offsety    = 30
+  __bgcolour   = '#ffffd0'
+
+  #
+  # Create a tooltip for a given widget
+  #
+  def __init__(self, widget, text='widget info'):
+
+    self.widget     = widget
+    self.text       = text
+    self.widget.bind("<Enter>",       self.__enter)
+    self.widget.bind("<Leave>",       self.__leave)
+    self.widget.bind("<ButtonPress>", self.__leave)
+    self.id         = []
+    self.tw         = None
+
+  #
+  # Callback methods
+  #
+
+  def __enter(self, event=None):
+    self.__schedule()
+
+  def __leave(self, event=None):
+    self.__unschedule()
+    self.__hideTip()
+
+  #
+  # Schedule a tooltip exposure
+  #
+  def __schedule(self):
+      self.__unschedule()
+      self.id.append(self.widget.after(wyCreateToolTip.__waittime, self.__showTip))
+
+  #
+  # Cancel all outstanding tootips
+  #
+  def __unschedule(self):
+
+    for lcl_id in self.id :
+      self.widget.after_cancel(lcl_id)
+
+    self.id = []
+
+  #
+  # Generate a tooltop
+  #
+  def __showTip(self, event=None):
+
+    # Get the origin of the clicked widget, and add an offset
+    # So the tip doesn't cover the toolbar object.
+    x, y, cx, cy  = self.widget.bbox('insert')
+    x            += self.widget.winfo_rootx() + wyCreateToolTip.__offsetx
+    y            += self.widget.winfo_rooty() + wyCreateToolTip.__offsety
+
+    # Creates a toplevel window
+    self.tw = Toplevel(self.widget)
+
+    # Leaves only the label and removes the app window
+    self.tw.wm_overrideredirect(True)
+    self.tw.wm_geometry("+%d+%d" % (x, y))
+    label = Label(self.tw,
+                  text        = self.text,
+                  justify     = 'left',
+                  background  = wyCreateToolTip.__bgcolour,
+                  relief      = 'solid',
+                  borderwidth = 1,
+                  wraplength  = wyCreateToolTip.__wraplength)
+    label.pack(ipadx = 1)
+
+  #
+  # Destroy the tooltip object
+  #
+  def __hideTip(self):
+    tw      = self.tw
+    self.tw = None
+    if tw:
+      tw.destroy()
 
 # ----------------------------------------------------------------
 # Define generic WyvernSemi Tkinter utils in a class
@@ -530,13 +621,16 @@ class lm32gui (lm32GuiBase, wyTkinterUtils):
   
   # ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
   # Callbacks
-  # ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++   
+  # ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+
+  def __lm32Exit(self, event=None):
+    self.root.quit()
   
   # __lm32OpenFile()
   #
   # Callback from menu open file, to get ELF filename 
   #
-  def __lm32OpenFile(self):
+  def __lm32OpenFile(self, event=None):
 
     # Open a file select dialog box
     fname = askopenfilename(filetypes = (('Elf files','*.elf'), ('all files','*.*')))
@@ -550,7 +644,7 @@ class lm32gui (lm32GuiBase, wyTkinterUtils):
   #
   # Callback from menu to select folder containing executable
   #
-  def __lm32OpenExecFolder(self) :
+  def __lm32OpenExecFolder(self, event=None) :
 
     foldername = askdirectory()
     if foldername != '' :
@@ -560,7 +654,7 @@ class lm32gui (lm32GuiBase, wyTkinterUtils):
   #
   # Callback from menu to select folder from which to run
   #
-  def __lm32OpenRunFolder (self) :
+  def __lm32OpenRunFolder (self, event=None) :
 
     # Get the folder name via a dialog
     foldername = askdirectory()
@@ -595,7 +689,7 @@ class lm32gui (lm32GuiBase, wyTkinterUtils):
 
     # Pop up a message box
     showinfo('About', '\nlm32.py—cpmico32 front end GUI\n\n'+
-                      'Copyright © 2017 Wyvern Semiconductors Ltd.\nVersion 1.3\n' +
+                      'Copyright © 2017 Wyvern Semiconductors Ltd.\nVersion 1.18\n' +
                       '\nContact: info@anita-simulators.org.uk' +
                       '\nwww.anita-simulators.org.uk/wyvernsemi')
   
@@ -762,6 +856,16 @@ class lm32gui (lm32GuiBase, wyTkinterUtils):
 
   # __lm32fastmodeUpdated()
   #
+  # On callback, invert fast mode Tk variable
+  #
+  def __lm32UpdateFastMode(self, event=None):
+    if self.fast_mode.get() :
+      self.fast_mode.set(0)
+    else :
+      self.fast_mode.set(1)
+
+  # __lm32fastmodeUpdated()
+  #
   # Callback for any update to fast_mode variable
   #
   def __lm32fastmodeUpdated(self, object, lstidx, mode) :
@@ -787,7 +891,7 @@ class lm32gui (lm32GuiBase, wyTkinterUtils):
   #
   # Callback for 'Debug' button. Construct command string for cpu6502 and execute
   #
-  def __lm32DebugCmd(self) :
+  def __lm32DebugCmd(self, event=None) :
 
     self.gdb.set(1)
     self.__lm32RunCmd()
@@ -797,7 +901,7 @@ class lm32gui (lm32GuiBase, wyTkinterUtils):
   #
   # Callback for 'Run' button. Construct command string for cpu6502 and execute
   #
-  def __lm32RunCmd(self) :
+  def __lm32RunCmd(self, event=None) :
 
     islnx  = False
     isFast = False
@@ -1030,7 +1134,7 @@ class lm32gui (lm32GuiBase, wyTkinterUtils):
   # ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
   # Widget generators
   # ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-  
+
   # _lm32CreateWidgets()
   #  
   # Create the application GUI
@@ -1055,9 +1159,9 @@ class lm32gui (lm32GuiBase, wyTkinterUtils):
     filemenu.add_command   (label = 'Change Run Folder...', command = self.__lm32OpenRunFolder)
     filemenu.add_command   (label = 'Executable Folder...',  command = self.__lm32OpenExecFolder)
     filemenu.add_separator ()
-    filemenu.add_command   (label = 'Exit', command = top.quit)
+    filemenu.add_command   (label = 'Exit', command = self.__lm32Exit)
 
-    # Add a mde sub menu
+    # Add a mode sub menu
     modemenu = Menu(master = menu, tearoff = 0)
     menu.add_cascade(label = 'Mode', menu = modemenu)
     modemenu.add_checkbutton (label = 'Fast Mode', onvalue = 1 , offvalue = 0, variable = self.fast_mode)
@@ -1068,13 +1172,40 @@ class lm32gui (lm32GuiBase, wyTkinterUtils):
     menu.add_cascade(label = 'Help', menu=helpmenu)
     helpmenu.add_command(label = 'About...', command=self.__lm32About)
 
+    nextrow = 0
+
+    sep = Separator(top, orient=HORIZONTAL)
+    sep.grid(row = nextrow, sticky=W+E, pady = 0)
+
+    nextrow += 1
+
+    # List the specs of the required toolbar widgets. Tuple format is:
+    # (<image filename>, <callback func>, <alignment>)
+    toolwidgetList = [('RunDir.gif',   self.__lm32OpenRunFolder,  LEFT , 'Select Run Folder Location'),
+                      ('ExeDir.gif',   self.__lm32OpenExecFolder, LEFT , 'Select Executable Folder Location'),
+                      ('OpenElf.gif',  self.__lm32OpenFile,       LEFT , 'Select ELF File to Run'),
+                      ('FastMode.gif', self.__lm32UpdateFastMode, LEFT , 'Toggle Fast Mode'),
+                      ('Run.gif',      self.__lm32RunCmd,         LEFT , 'Run Executable'),
+                      ('Debug.gif',    self.__lm32DebugCmd,       LEFT , 'Run In Debug Mode'),
+                      ('Exit.gif',     self.__lm32Exit,           RIGHT, 'Exit')]
+
+    # Create the toolbar
+    imgList = self.__lm32CreateToolbarWidgets(top, toolwidgetList, nextrow)
+
+    nextrow += 1
+
+    sep = Separator(top, orient=HORIZONTAL)
+    sep.grid(row = nextrow, sticky=W+E, pady = 5)
+
+    nextrow += 1
+
     self.note   = Notebook(master = top)
     tab1        = Frame(master = self.note)
     tab2        = Frame(master = self.note)
 
     self.note.add(child = tab1, text = 'cpumico32')
     self.note.add(child = tab2, text = 'lnxmico32')
-    self.note.grid(row = 0, padx = 10, pady = 10)
+    self.note.grid(row = nextrow, padx = 10, pady = 10)
 
     # Create a panel with the icon image. Image file expected to be in same location
     # as the script.
@@ -1198,6 +1329,7 @@ class lm32gui (lm32GuiBase, wyTkinterUtils):
     # If not lnxmico32, append the program file entry data to the list
     if not isLnx :
       self.__none = None
+      # noinspection PyTypeChecker
       tupleList.append([('Program file', self.elfname, 50, '', self.__none)])
 
     hdls = self.addFileEntryRows('', tupleList, fileframe)
@@ -1231,25 +1363,58 @@ class lm32gui (lm32GuiBase, wyTkinterUtils):
     # Add utility file widgets frame in a new row, spanning all three columns
     framerow += 1
     dirframe.grid(row = framerow, columnspan = totalcols, padx = 10, pady = 10, sticky = W+E)
-    
-    # Add a 'Run' button to a new frame
-    execframe = Frame(master = master,  padding = 5)
-    Button(master = execframe, text = 'Run',   command = self.__lm32RunCmd).grid(row = 0, column = 0, padx=10)
-
-    # Add a 'Debug' button
-    dbghdl = Button(master = execframe, text = 'Debug', command = self.__lm32DebugCmd)
-    dbghdl.grid (row = 0, column = 1, padx=10)
-
-    # Add the Debug button widget handle to the fast mode exclusion list
-    fasthdllist.append(dbghdl)
-    
-    # Add Run/Debug button frame in a new row, spanning all three columns
-    framerow +=1
-    execframe.grid(row = framerow, columnspan = totalcols, padx=10, pady = 10)
 
     # Return the fast mode exclusion list
     return fasthdllist
-  
+    # __lm32CreateToolbarButton
+
+  #
+  # Create a label with an image,  and bind a callback on click
+  #
+  def __lm32CreateToolbarButton(self, toolframe, fname, cbfunc, tip = '', align=LEFT):
+
+    # Open the GIF image
+    img = PhotoImage(file = self.scriptdir.get() + '/tbimages/' + fname)
+
+    # Create a label with a background of the image and
+    # bind a callback function on a click
+    hdl = Label(toolframe, image = img)
+    hdl.pack(side = align, padx=2, pady=2)
+    hdl.bind("<Button-1>", cbfunc)
+
+    ttp = wyCreateToolTip(hdl, tip)
+
+    # Return the image handle, so it can be stored, else
+    # the object is deleted if the handle disappears.
+    return img
+
+  # __lm32CreateToolbarWidgets
+  #
+  # Create a set of labels with images, and bind callbacks on
+  # click, as listed in the set of tuples passed in
+  #
+  def __lm32CreateToolbarWidgets(self, top, tupleList, nextrow):
+
+    # Create an empty list to store returned image handles
+    imgList = []
+
+    # Create a Frame as the toolbar, and attach to both sides
+    # of its parent
+    toolbar = Frame(master=top)
+    toolbar.grid(sticky=W+E)
+
+    # Loop through the widget spec. list and create the widgets
+    for widgetItem in tupleList :
+      fname, cbfunc, align, tip = widgetItem
+      img = self.__lm32CreateToolbarButton(toolbar, fname, cbfunc, tip, align)
+      imgList.append(img)
+
+    # Add the toolbar to the grid
+    toolbar.grid(row=nextrow, column=0, padx = 0, pady = 0)
+
+    # return the image list for storage
+    return imgList
+
   # __lm32CreateCfgPopup()
   #
   # Create the CFG register pop up

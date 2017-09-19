@@ -1,10 +1,10 @@
 
 [Setup]
 AppName                 = CPUMICO32
-AppVerName              = CPUMICO32_3_15
+AppVerName              = CPUMICO32_3_18
 DefaultDirName          = {pf}\mico32
 DisableProgramGroupPage = yes
-OutputBaseFilename      = setup_cpumico32_3_15
+OutputBaseFilename      = setup_cpumico32_3_18
 
 [Dirs]
 Name: "{app}\obj"
@@ -78,6 +78,7 @@ Source: "src\lnxuart.h";                               DestDir: "{app}\src"
 Source: "python\lm32.py";                              DestDir: "{app}\python"
 Source: "python\icon.gif";                             DestDir: "{app}\python"
 Source: "python\favicon.ico";                          DestDir: "{app}\python"
+Source: "python\tbimages\*.gif";                       DestDir: "{app}\python\tbimages"
 
 ; Linux binaries for lnxmico32 case study
 Source: "test\romfs.ext2";                             DestDir: "{app}\test"
