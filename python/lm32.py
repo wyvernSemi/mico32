@@ -377,6 +377,7 @@ class lm32GuiBase :
   _LM32DEFAULTgdb                = 0
   _LM32DEFAULTdumpregs           = 0
   _LM32DEFAULTdumpnuminstr       = 0
+  _LM32DEFAULTdumphist           = 0
   _LM32DEFAULTdisassemble        = 0
   _LM32DEFAULTverbose            = 0
   _LM32DEFAULTenablecb           = 0
@@ -491,6 +492,7 @@ class lm32gui (lm32GuiBase, wyTkinterUtils):
     self.gdb                = IntVar()
     self.dumpregs           = IntVar()
     self.dumpnuminstr       = IntVar()
+    self.dumphist           = IntVar()
     self.disassemble        = IntVar()
     self.verbose            = IntVar()
     self.enablecb           = IntVar()
@@ -556,6 +558,7 @@ class lm32gui (lm32GuiBase, wyTkinterUtils):
     self.elfname.set            (lm32gui._LM32DEFAULTelfname           )
     self.dumpregs.set           (lm32gui._LM32DEFAULTdumpregs          )
     self.dumpnuminstr.set       (lm32gui._LM32DEFAULTdumpnuminstr      )
+    self.dumphist.set           (lm32gui._LM32DEFAULTdumphist          )
     self.disassemble.set        (lm32gui._LM32DEFAULTdisassemble       )
     self.verbose.set            (lm32gui._LM32DEFAULTverbose           )
     self.enablecb.set           (lm32gui._LM32DEFAULTenablecb          )
@@ -958,7 +961,11 @@ class lm32gui (lm32GuiBase, wyTkinterUtils):
     # Dump num instructions
     if self.dumpnuminstr.get() != 0 :
       flagstr += 'I'
-      
+
+    # Dump num instructions
+    if not isFast and self.dumphist.get() != 0 :
+      flagstr += 'H'
+
     # Disassemble
     if not isFast and self.disassemble.get() != 0 :
       flagstr += 'x'
@@ -1262,16 +1269,21 @@ class lm32gui (lm32GuiBase, wyTkinterUtils):
 
     # Append cpumico32/lnxmico32 specific flags as appropriate
     if not isLnx :
-      tupleList.append([('Enable Internal callbacks', self.enablecb,    1)])
+      tupleList.append([('Enable Internal callbacks', self.enablecb,    1),
+                        ('Dump Opcode Histogram',     self.dumphist,    1)])
     else :
-      tupleList.append([('Save state on Exit', self.savestate, 1), ('Load state at start', self.loadstate, 1)])
+      tupleList.append([('Save state on Exit',        self.savestate,   1), ('Load state at start', self.loadstate, 1)])
+      tupleList.append([('Dump Opcode Histogram',     self.dumphist,    1)])
 
     hdls = self.addCheckButtonRows('', tupleList, flagsframe)
     flagsframe.grid(row = framerow, padx = 10, pady = 10, sticky = W)
 
     # Add to fast mode exclusion list handles from 'Disassemble' to 'Disable Break on Lock
-    # (indexs 2 to 5)
+    # (indexes 2 to 5)
     fasthdllist.extend(hdls[2:6])
+
+    # Add the Histogram dump flag to the exclusion list. It is the last one in all modes.
+    fasthdllist.extend(hdls[-1:])
 
     # Add a trace on the TCP enable variable
     self.enabletcp.trace('w', self.__lm32TcpUpdated)

@@ -21,7 +21,7 @@
 // You should have received a copy of the GNU General Public License
 // along with cpumico32. If not, see <http://www.gnu.org/licenses/>.
 //
-// $Id: lm32_cpu_hdr.h,v 3.10 2017/07/31 14:02:46 simon Exp $
+// $Id: lm32_cpu_hdr.h,v 3.11 2017/10/13 14:32:12 simon Exp $
 // $Source: /home/simon/CVS/src/cpu/mico32/src/lm32_cpu_hdr.h,v $
 //
 //=============================================================
@@ -344,6 +344,7 @@ typedef struct {
     int32_t             entry_point_addr;
     int                 test_mode;
     int                 verbose;
+    int                 op_stats_dump;
     int32_t             ram_dump_addr;
     int                 ram_dump_bytes;
     int                 dump_registers;

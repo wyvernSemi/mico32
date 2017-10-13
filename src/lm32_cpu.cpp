@@ -22,7 +22,7 @@
 // You should have received a copy of the GNU General Public License
 // along with cpumico32. If not, see <http://www.gnu.org/licenses/>.
 //
-// $Id: lm32_cpu.cpp,v 3.14 2017/07/18 09:14:44 simon Exp $
+// $Id: lm32_cpu.cpp,v 3.15 2017/10/13 14:32:12 simon Exp $
 // $Source: /home/simon/CVS/src/cpu/mico32/src/lm32_cpu.cpp,v $
 //
 //=============================================================
@@ -107,6 +107,12 @@ lm32_cpu::lm32_cpu (const int verbose_in,
     for (int idx = 0; idx < LM32_NUM_OF_REGISTERS; idx++)
     {
         rt[idx] = 0;
+    }
+
+    // Reset op code stats buffer
+    for (int idx = 0; idx < LM32_NUM_OPCODES; idx++)
+    {
+        op_count[idx] = 0;
     }
 
     // No callback until user configures
@@ -1071,6 +1077,11 @@ bool lm32_cpu::execute_instruction (p_lm32_decode_t d)
 
     // Calculate the index into the decode tables from the opcode
     int table_index = d->opcode >> OPCODE_START_BIT;
+
+#ifndef LM32_FAST_COMPILE
+    // Keep a count of the number of times each opcode is executed
+    op_count[table_index]++;
+#endif
 
     // Get decode information from the master table
     d->decode = &decode_table[table_index];

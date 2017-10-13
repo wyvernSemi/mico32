@@ -23,7 +23,7 @@
 // You should have received a copy of the GNU General Public License
 // along with cpumico32. If not, see <http://www.gnu.org/licenses/>.
 //
-// $Id: cpumico32.cpp,v 3.8 2017/05/17 13:02:53 simon Exp $
+// $Id: cpumico32.cpp,v 3.9 2017/10/13 14:32:12 simon Exp $
 // $Source: /home/simon/CVS/src/cpu/mico32/src/cpumico32.cpp,v $
 //
 //=============================================================
@@ -215,6 +215,14 @@ int main (int argc, char** argv)
             return -1;
         }
     }
+
+#ifndef LM32_FAST_COMPILE
+    // Dump opcode stats after completion, if specified to do so
+    if (p_cfg->op_stats_dump)
+    {
+        cpu->lm32_dump_op_stats();
+    }
+#endif
 
     // Dump registers after completion, if specified to do so
     if (p_cfg->dump_registers)

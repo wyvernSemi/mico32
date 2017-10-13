@@ -21,7 +21,7 @@
 // You should have received a copy of the GNU General Public License
 // along with cpumico32. If not, see <http://www.gnu.org/licenses/>.
 //
-// $Id: lm32_cpu_disassembler.cpp,v 3.3 2017/05/17 13:05:17 simon Exp $
+// $Id: lm32_cpu_disassembler.cpp,v 3.4 2017/10/13 14:32:12 simon Exp $
 // $Source: /home/simon/CVS/src/cpu/mico32/src/lm32_cpu_disassembler.cpp,v $
 //
 //=============================================================
@@ -108,6 +108,22 @@ void lm32_cpu::lm32_dump_registers()
 #endif
 }
 
+// -------------------------------------------------------------------------
+// lm32_dump_op_stats()
+// -------------------------------------------------------------------------
+#ifndef LM32_FAST_COMPILE
+void lm32_cpu::lm32_dump_op_stats()
+{
+    fprintf(ofp, "\n # OPCODE     COUNT\n");
+
+    for (int idx = 0; idx < LM32_NUM_OPCODES; idx++)
+    {
+        const char *op_name = decode_table[idx].instr_name;
+
+        fprintf(ofp, "%2d %s: %lld\n", idx, op_name, op_count[idx]);
+    }
+}
+#endif
 // -------------------------------------------------------------------------
 // fmt_register()
 //

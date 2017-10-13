@@ -22,7 +22,7 @@
 // You should have received a copy of the GNU General Public License
 // along with cpumico32. If not, see <http://www.gnu.org/licenses/>.
 //
-// $Id: lm32_get_config.cpp,v 3.12 2017/07/31 14:27:12 simon Exp $
+// $Id: lm32_get_config.cpp,v 3.13 2017/10/13 14:32:12 simon Exp $
 // $Source: /home/simon/CVS/src/cpu/mico32/src/lm32_get_config.cpp,v $
 //
 //=============================================================
@@ -55,7 +55,7 @@ extern int optind;
 #define LM32_COMMON_ARGS               "f:hl:r:R:DIc:i:"
 #define LM32_CPUMICO32_ARGS            "m:o:e:T"
 #define LM32_LNXMICO32_ARGS            "s:SL"
-#define LM32_NON_FAST_ARGS             "n:vxb:dw:"
+#define LM32_NON_FAST_ARGS             "n:vxb:dw:H"
 #define LM32_LNX_NON_FAST_ARGS         "V:"
 #define LM32_DBG_ARGS                  "gtG:"
 
@@ -213,6 +213,7 @@ extern "C" lm32_config_t* lm32_get_config(int argc, char** argv, const char* def
     lm32_cpu_cfg.entry_point_addr                = 0;
     lm32_cpu_cfg.test_mode                       = 0;
     lm32_cpu_cfg.verbose                         = LM32_VERBOSITY_LVL_OFF;
+    lm32_cpu_cfg.op_stats_dump                   = 0;
     lm32_cpu_cfg.ram_dump_addr                   = -1;
     lm32_cpu_cfg.ram_dump_bytes                  = 0;
     lm32_cpu_cfg.dump_registers                  = 0;
@@ -268,7 +269,7 @@ extern "C" lm32_config_t* lm32_get_config(int argc, char** argv, const char* def
             fprintf(stderr,
                     "Usage: %s [-h] "
 #ifndef LM32_FAST_COMPILE
-                    "[-g] [-t] [-G <port #>] [-v] [-x] [-d] "
+                    "[-g] [-t] [-G <port #>] [-v] [-x] [-d] [-H]"
 #endif
                     "[-D] [-I] "
                     "\n         "
@@ -321,6 +322,7 @@ extern "C" lm32_config_t* lm32_get_config(int argc, char** argv, const char* def
                     "    -v Specify verbose output (default: off)\n"
                     "    -x Enable disassemble mode (default: disabled)\n"
                     "    -d Disable breaking on lock condition (default: enabled)\n"
+                    "    -H Dump opcode statistics on termination (default: no dump)\n"
 #endif
                     "    -r Address to dump value from internal ram after completion (default: no dump)\n"
                     "    -R Number of bytes to dump from RAM if -r specified (default 4)\n"
@@ -643,6 +645,10 @@ extern "C" lm32_config_t* lm32_get_config(int argc, char** argv, const char* def
 
         case 'v':
             lm32_cpu_cfg.verbose = 1;
+            break;
+
+        case 'H':
+            lm32_cpu_cfg.op_stats_dump = 1;
             break;
 #endif
         case 'r':

@@ -22,7 +22,7 @@
 // You should have received a copy of the GNU General Public License
 // along with cpumico32. If not, see <http://www.gnu.org/licenses/>.
 //
-// $Id: lm32_cpu.h,v 3.6 2017/07/31 14:02:46 simon Exp $
+// $Id: lm32_cpu.h,v 3.7 2017/10/13 14:32:12 simon Exp $
 // $Source: /home/simon/CVS/src/cpu/mico32/src/lm32_cpu.h,v $
 //
 //=============================================================
@@ -235,13 +235,17 @@ public:
     LIBMICO32_API void               lm32_set_configuration         (const uint32_t word);       // Enable/disable CPU features
 
     // Return the current number of instructions executed
-    LIBMICO32_API inline uint64_t lm32_get_num_instructions(void) { return state.instr_count; }
+    LIBMICO32_API inline uint64_t    lm32_get_num_instructions(void) { return state.instr_count; }
     
     // Return the current time
     LIBMICO32_API inline lm32_time_t lm32_get_current_time(void) {  return state.clk_count; }
 
     // Get the configuration word
     LIBMICO32_API inline uint32_t    lm32_get_configuration(void) { return state.cfg; }
+
+#ifndef LM32_FAST_COMPILE
+    LIBMICO32_API        void        lm32_dump_op_stats(void);
+#endif
 
     // User called routine to set verbosity level of debug information.
     // Current only two levels supported: 0 = off, >0 = on
@@ -433,6 +437,8 @@ private:
     // Start address for dissassembling
     uint32_t                   disassemble_start;
     bool                       disassemble_active;
+
+    uint64_t                   op_count[LM32_NUM_OPCODES];
 
 #ifdef LM32_MMU
     lm32_tbl_t                 dtlb;
