@@ -209,12 +209,13 @@ main:
         # Enable interrupts
         ori  r1, r0, 1
         wcsr IE, r1
- 
+
         ### Out of range exception
 
         # Load r12 with the expected exception number
         ori      r12, r0, IBUS_EXCEPTION
-
+        
+#ifndef WY_RTL 
         # Load a real return address into r11
         ori       r11, r0, _ok1
 
@@ -226,7 +227,7 @@ _ok1:
         # Check that ea had bad address
         addi      r13, r13, 4
         bne       r14, r13, _finish
-
+#endif
         ### Reserved instruction exception
         
         # Clear r20
@@ -252,7 +253,8 @@ _ok2:
 _ok3:
         # Check we visited the exception code
         bne r20, r12, _finish
-
+        
+#ifndef WY_RTL
     ### Disable multiplier and check mul instruction cause exception
 
         # Clear r20
@@ -593,7 +595,7 @@ _ok15:
 
         # Check we didn't visit the exception code
         bne r20, r0, _finish
-
+#endif
 
 _good:
         ori      r30, r0, PASS_VALUE

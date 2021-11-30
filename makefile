@@ -71,7 +71,7 @@ CC_C       = gcc
 ifeq (${OSTYPE}, Cygwin)
   COPTS    = -g -D_GNU_SOURCE -DLM32_MMU
 else
-  COPTS    = -g -fPIC -DLM32_MMU
+  COPTS    = -g -fPIC -DLM32_MMU -Wno-format
 endif
 
 ifeq (${OSTYPE_S},windows32)

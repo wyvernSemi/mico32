@@ -39,7 +39,11 @@ _reset_handler:
         ori  r28, r0, 0xfff0
         lw  r1, (r0+RESTART_ADDR)
         ori r2, r0, RESTART_ID
+#ifndef WY_RTL       
         be  r2, r1, _restart
+#else
+        nop
+#endif
         bi main
         nop
 _breakpoint_handler:
@@ -265,6 +269,7 @@ _loop3:
         sli r3, r3, 1
         bne r3, r0, _loop1
 
+#ifndef WY_RTL
 # --------- interrupt num tests -----------
 
         ori r20, r0, 0
@@ -351,6 +356,12 @@ _restart:
 
         be  r0, r0, _loop6
 _ok3:
+#else
+        be  r0, r0, _ok3
+_restart:
+        be r0, r0, _finish
+_ok3:        
+#endif
 
 _good:
         ori      r30, r0, PASS_VALUE

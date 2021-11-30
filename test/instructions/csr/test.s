@@ -15,9 +15,12 @@ _start: .global _start
 
         .equ COMMS_BASE_ADDRESS,        0x20000000
         .equ COMMS_COUNT_EN_OFFSET,     0x0000001C
-
+#ifdef WY_RTL
+        .equ EXP_CFG_VAL, 0x01120531
+#else
         #.equ EXP_CFG_VAL, 0x01120837
         .equ EXP_CFG_VAL, 0x01120df7
+#endif
         .equ TESTVAL1,    0xfe718100
         .equ TESTVAL2,    0xfe718131
         .equ CCRSTVAL,    0x7650
@@ -74,6 +77,22 @@ main:
         rcsr     r8, DCC
         bne      r8, r0, _finish
 
+#ifdef WY_RTL
+        # Unimplemented  JTX
+        rcsr     r8, JTX
+        bne      r8, r0, _finish
+        wcsr     JTX, r9
+        rcsr     r8, JTX
+        bne      r8, r0, _finish
+
+        # Unimplemented  JRX
+        rcsr     r8, JRX
+        bne      r8, r0, _finish
+        wcsr     JRX, r9
+        rcsr     r8, JRX
+        bne      r8, r0, _finish
+        
+#else
         # Implemented  JTX (loopback)
         wcsr     JTX, r9
         rcsr     r8, JTX
@@ -136,6 +155,7 @@ main:
         rcsr     r8, IE
         andi     r4, r4, 1
         bne      r8, r4, _finish
+#endif
 
 _good:
         ori      r30, r0, PASS_VALUE

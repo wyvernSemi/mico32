@@ -233,7 +233,7 @@ int main (int argc, char** argv)
     // Dump the number of executed instructions
     if (p_cfg->dump_num_exec_instr)
     {
-        fprintf(lfp, "\nNumber of executed instructions = %ld\n",  cpu->lm32_get_num_instructions());
+        fprintf(lfp, "\nNumber of executed instructions = %lld\n",  cpu->lm32_get_num_instructions());
     }
 
     // Dump RAM, if specified to do so and within range

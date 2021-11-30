@@ -276,7 +276,7 @@ void lm32_cpu::disassemble(const p_lm32_decode_t d, FILE *ofp, const bool disass
 
     if (disassemble_run == false)
     {
-        fprintf(ofp, "  @%ld", state.cycle_count);
+        fprintf(ofp, "  @%lld", state.cycle_count);
     }
 
     fprintf(ofp, "\n");

@@ -1,10 +1,12 @@
 
 [Setup]
+#define DocDir          "C:\Users\simon\Documents\web\homepage\wyvernsemi\lm32"
+
 AppName                 = CPUMICO32
-AppVerName              = CPUMICO32_3_19
+AppVerName              = CPUMICO32_3_20
 DefaultDirName          = {pf}\mico32
 DisableProgramGroupPage = yes
-OutputBaseFilename      = setup_cpumico32_3_19
+OutputBaseFilename      = setup_cpumico32_3_20
 
 [Dirs]
 Name: "{app}\obj"
@@ -26,7 +28,12 @@ Source: "lm32cpu.ini";                                 DestDir: "{app}"
 
 ; Documentation
 Source: "doc\README.pdf";                              DestDir: "{app}\doc"; Flags: isreadme
-Source: "man\cpumico32.1";                             DestDir: "{app}\man"
+;Source: "{#DocDir}\index.html";                        DestDir: "{app}\doc"; DestName: "readme.htm"; Flags: isreadme
+;Source: "{#DocDir}\lm32_files\*.jpg";                  DestDir: "{app}\doc\lm32_files"
+;Source: "{#DocDir}\lm32_files\*.png";                  DestDir: "{app}\doc\lm32_files" 
+;Source: "{#DocDir}\..\wyvernsemi_files\wy.css";        DestDir: "{app}\wyvernsemi_files"
+;Source: "{#DocDir}\..\wyvernsemi_files\*.png";         DestDir: "{app}\wyvernsemi_files"    
+;Source: "man\cpumico32.1";                             DestDir: "{app}\man"
 
 ; Visual studio files for 2010 express
 Source: "msvc\cpumico32.sln";                          DestDir: "{app}\msvc"

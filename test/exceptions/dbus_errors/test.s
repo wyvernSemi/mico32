@@ -259,6 +259,7 @@ _ok3:
         lh  r2,  (r1 + 0)
 _ok4:
 
+#ifndef WY_RTL
         # Put an out-of-range address in r1
         ori  r1, r0, TESTADDR2 & 0xffff
         orhi r1, r1, (TESTADDR2 >> 16) & 0xffff
@@ -286,6 +287,7 @@ _ok5:
 _ok6:
         # Check we visited the exception code
         bne  r20, r12, _finish
+#endif
 
 _good:
         ori      r30, r0, PASS_VALUE

@@ -3,12 +3,11 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <LocalDebuggerCommandArguments>-I</LocalDebuggerCommandArguments>
     <DebuggerFlavor>WindowsLocalDebugger</DebuggerFlavor>
-    <LocalDebuggerWorkingDirectory>$(ProjectDir)\..\..\..\test\</LocalDebuggerWorkingDirectory>
+    <LocalDebuggerWorkingDirectory>$(ProjectDir)\..\..\test\</LocalDebuggerWorkingDirectory>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
-    <LocalDebuggerCommandArguments>
-    </LocalDebuggerCommandArguments>
+    <LocalDebuggerCommandArguments>-I</LocalDebuggerCommandArguments>
     <DebuggerFlavor>WindowsLocalDebugger</DebuggerFlavor>
-    <LocalDebuggerWorkingDirectory>$(ProjectDir)\..\..\..\test\</LocalDebuggerWorkingDirectory>
+    <LocalDebuggerWorkingDirectory>$(ProjectDir)\..\..\test\</LocalDebuggerWorkingDirectory>
   </PropertyGroup>
 </Project>
