@@ -114,13 +114,13 @@ do
     # double the line size until maximum. When both at maximum, reset to minimum
     if [ "$setsize" = "1024" ]
     then
-	if [ "$linesize" = "16" ]
-	then
+        if [ "$linesize" = "16" ]
+        then
             setsize=128
-	    linesize=4
+            linesize=4
         else
-	    linesize=$((linesize*2))
-	fi
+            linesize=$((linesize*2))
+        fi
     else
         setsize=$(($setsize*2))
     fi
@@ -129,10 +129,10 @@ do
     if [ $result_str = $passresult -o $result_str = $passresult_win ]
     then
         echo "  PASS"
-	num_passed=$(($num_passed + 1))
+        num_passed=$(($num_passed + 1))
     else
         echo "  *FAIL*"
-	num_failures=$(($num_failures + 1))
+        num_failures=$(($num_failures + 1))
     fi
 
     # Clean up temporary files
