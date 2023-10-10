@@ -1,6 +1,8 @@
 ﻿
-Microsoft Visual Studio Solution File, Format Version 11.00
-# Visual C++ Express 2010
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 16
+VisualStudioVersion = 16.0.33801.447
+MinimumVisualStudioVersion = 10.0.40219.1
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "cpumico32", "cpumico32\cpumico32.vcxproj", "{B2980F08-FF9A-40C1-9710-A073CC3497B9}"
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "libmico32", "libmico32\libmico32.vcxproj", "{9350EF61-1F73-4702-8951-B9C07442CBDC}"
@@ -10,23 +12,40 @@ EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Win32 = Debug|Win32
+		Debug|x64 = Debug|x64
 		Release|Win32 = Release|Win32
+		Release|x64 = Release|x64
 	EndGlobalSection
 	GlobalSection(ProjectConfigurationPlatforms) = postSolution
 		{B2980F08-FF9A-40C1-9710-A073CC3497B9}.Debug|Win32.ActiveCfg = Debug|Win32
 		{B2980F08-FF9A-40C1-9710-A073CC3497B9}.Debug|Win32.Build.0 = Debug|Win32
+		{B2980F08-FF9A-40C1-9710-A073CC3497B9}.Debug|x64.ActiveCfg = Debug|x64
+		{B2980F08-FF9A-40C1-9710-A073CC3497B9}.Debug|x64.Build.0 = Debug|x64
 		{B2980F08-FF9A-40C1-9710-A073CC3497B9}.Release|Win32.ActiveCfg = Release|Win32
 		{B2980F08-FF9A-40C1-9710-A073CC3497B9}.Release|Win32.Build.0 = Release|Win32
+		{B2980F08-FF9A-40C1-9710-A073CC3497B9}.Release|x64.ActiveCfg = Release|x64
+		{B2980F08-FF9A-40C1-9710-A073CC3497B9}.Release|x64.Build.0 = Release|x64
 		{9350EF61-1F73-4702-8951-B9C07442CBDC}.Debug|Win32.ActiveCfg = Debug|Win32
 		{9350EF61-1F73-4702-8951-B9C07442CBDC}.Debug|Win32.Build.0 = Debug|Win32
+		{9350EF61-1F73-4702-8951-B9C07442CBDC}.Debug|x64.ActiveCfg = Debug|x64
+		{9350EF61-1F73-4702-8951-B9C07442CBDC}.Debug|x64.Build.0 = Debug|x64
 		{9350EF61-1F73-4702-8951-B9C07442CBDC}.Release|Win32.ActiveCfg = Release|Win32
 		{9350EF61-1F73-4702-8951-B9C07442CBDC}.Release|Win32.Build.0 = Release|Win32
+		{9350EF61-1F73-4702-8951-B9C07442CBDC}.Release|x64.ActiveCfg = Release|x64
+		{9350EF61-1F73-4702-8951-B9C07442CBDC}.Release|x64.Build.0 = Release|x64
 		{78C46219-2C85-4933-9C87-88EFA88BEE80}.Debug|Win32.ActiveCfg = Debug|Win32
 		{78C46219-2C85-4933-9C87-88EFA88BEE80}.Debug|Win32.Build.0 = Debug|Win32
+		{78C46219-2C85-4933-9C87-88EFA88BEE80}.Debug|x64.ActiveCfg = Debug|x64
+		{78C46219-2C85-4933-9C87-88EFA88BEE80}.Debug|x64.Build.0 = Debug|x64
 		{78C46219-2C85-4933-9C87-88EFA88BEE80}.Release|Win32.ActiveCfg = Release|Win32
 		{78C46219-2C85-4933-9C87-88EFA88BEE80}.Release|Win32.Build.0 = Release|Win32
+		{78C46219-2C85-4933-9C87-88EFA88BEE80}.Release|x64.ActiveCfg = Release|x64
+		{78C46219-2C85-4933-9C87-88EFA88BEE80}.Release|x64.Build.0 = Release|x64
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {9C201C32-85EA-46AE-8B30-AA03EB594434}
 	EndGlobalSection
 EndGlobal

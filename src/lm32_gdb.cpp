@@ -1387,7 +1387,7 @@ int lm32gdb_process_gdb (lm32_cpu* cpu, int port_num, bool tcp_connection)
     if (tcp_connection)
     {
         // Create a TCP/IP socket
-        if ((pty_fd = (void *)lm32gdb_connect_skt(port_num)) < 0)
+        if ((lm32gdb_skt_t)(pty_fd = (void *)lm32gdb_connect_skt(port_num)) < 0)
         {
             return PTY_ERROR;
         }
