@@ -2,6 +2,10 @@
 
 LatticeMico32 instruction set simulator project
 
+<p align="center">
+<img src="https://github.com/wyvernSemi/mico32/assets/21970031/a080e97b-14a6-4e7e-bd06-0589df087579" width=600>
+</p>
+
 Includes a C/C++ model of the lm32 CPU, with the following features:
 
 * All supported core instructions
