@@ -1,3 +1,0 @@
-* Add JTAG interface capability built-in
-* Test timing against a cycle accurate model
-* Test with multiple instances of model instantiated
