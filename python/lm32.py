@@ -76,7 +76,7 @@
 # =======================================================================
 
 # Get libraries for interfacing with the OS
-import os, subprocess
+import os, subprocess, sys
 
 # Get everything from Tkinter, as we use quite a lot
 from tkinter      import *
